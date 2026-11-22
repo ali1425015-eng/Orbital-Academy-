@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Orbital Academy — HTTP server (REST API + static files). Zero dependencies:
-   node:http, node:sqlite, node:crypto, global fetch (Node ≥ 22.5).
+   node:http, node:sqlite, node:crypto, global fetch (Node ≥ 22.13).
    Start:  npm start      →  http://localhost:8080 */
 'use strict';
 const http = require('http');
@@ -128,7 +128,7 @@ route('GET', '/api/bank/stats', () => {
 });
 
 route('POST', '/api/auth/signup', async (req) => {
-  rateLimit('auth:' + ip(req), 10);
+  rateLimit('signup:' + ip(req), 60);   // a whole class often shares ONE public IP (school NAT), so this must be generous
   const b = await readBody(req);
   const username = cleanUsername(b.username);
   if (String(b.password || '').length < 6) throw new HttpError(400, 'weak_password');
@@ -144,8 +144,9 @@ route('POST', '/api/auth/signup', async (req) => {
 });
 
 route('POST', '/api/auth/login', async (req) => {
-  rateLimit('auth:' + ip(req), 15);
+  rateLimit('login-ip:' + ip(req), 200);
   const b = await readBody(req);
+  rateLimit('login-user:' + String(b.username || '').trim().toLowerCase(), 10);   // password-guessing protection per account (not per IP)
   const r = db.prepare('SELECT uid, passHash, salt FROM users WHERE username = ?').get(String(b.username || '').trim());
   if (!r || !auth.checkPassword(b.password || '', r.passHash, r.salt)) throw new HttpError(401, 'bad_credentials');
   const u = loadUser(r.uid);
@@ -154,15 +155,16 @@ route('POST', '/api/auth/login', async (req) => {
 });
 
 route('POST', '/api/auth/google', async (req) => {
-  rateLimit('auth:' + ip(req), 15);
+  rateLimit('google:' + ip(req), 200);
   const b = await readBody(req);
   let g; try { g = await auth.verifyGoogle(String(b.credential || ''), GOOGLE_CLIENT_ID); } catch (e) { throw new HttpError(e.message === 'google_not_configured' ? 501 : 401, e.message); }
   let r = db.prepare('SELECT uid FROM users WHERE googleSub = ?').get(g.sub);
   if (!r) {
-    let base = (b.username ? cleanUsername(b.username) : g.name.replace(/[^\p{L}\p{N}_]/gu, '').slice(0, 14) || 'pilot');
+    // privacy: never expose the real Google name publicly — use the chosen username, or a random pilot name
+    let base = b.username ? cleanUsername(b.username) : 'pilot' + crypto.randomInt(1000, 9999);
     let name = base, i = 1;
     while (db.prepare('SELECT 1 FROM users WHERE username = ?').get(name)) name = base + '_' + (++i);
-    const u = Service.newUser({ uid: newUid(), username: name, displayName: g.name, gradeLevel: cleanGrade(b.gradeLevel || 9), avatar: AVATARS[0], now: Date.now() });
+    const u = Service.newUser({ uid: newUid(), username: name, displayName: name, gradeLevel: cleanGrade(b.gradeLevel || 9), avatar: AVATARS[0], now: Date.now() });
     insertUser(u, { googleSub: g.sub, email: g.email });
     r = { uid: u.uid };
   }

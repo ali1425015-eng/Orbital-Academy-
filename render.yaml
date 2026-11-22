@@ -1,0 +1,18 @@
+# Render "Blueprint" — New + > Blueprint > pick this repo.  (A persistent disk needs a paid instance type.)
+services:
+  - type: web
+    name: orbital-academy
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    disk:
+      name: orbital-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

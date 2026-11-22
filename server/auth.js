@@ -42,7 +42,8 @@ function verifyToken(tok) {
 /* Verifies a Google ID token with Google's tokeninfo endpoint. */
 async function verifyGoogle(credential, clientId) {
   if (!clientId) throw new Error('google_not_configured');
-  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(8000) });
+  const base = process.env.GOOGLE_TOKENINFO_URL || 'https://oauth2.googleapis.com/tokeninfo';   // override is for automated tests only
+  const r = await fetch(base + '?id_token=' + encodeURIComponent(credential), { signal: AbortSignal.timeout(8000) });
   if (!r.ok) throw new Error('google_invalid');
   const p = await r.json();
   if (p.aud !== clientId) throw new Error('google_wrong_audience');

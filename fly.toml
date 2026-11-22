@@ -1,0 +1,28 @@
+# Fly.io — run `fly launch --no-deploy --copy-config`, then the commands in docs/DEPLOY.md
+app = "orbital-academy"          # must be globally unique: change it
+primary_region = "fra"
+
+[build]
+
+[env]
+  PORT = "8080"
+  DATA_DIR = "/data"
+  DB_FILE = "/data/orbital.db"
+
+[[mounts]]
+  source = "orbital_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "30s"
+    method = "GET"
+    path = "/api/health"
+    timeout = "5s"

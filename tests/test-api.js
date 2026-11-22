@@ -27,6 +27,19 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   await new Promise(r => mock.listen(0, '127.0.0.1', r));
+  // mock of Google's tokeninfo endpoint
+  const GCLIENT = 'test-client.apps.googleusercontent.com';
+  const gmock = http.createServer((req, res) => {
+    const tok = new URL(req.url, 'http://x').searchParams.get('id_token');
+    const base = { iss: 'https://accounts.google.com', sub: 'sub-' + tok, email: 'real.name@example.com', email_verified: 'true', given_name: 'Ahmed', exp: String(Math.floor(Date.now() / 1000) + 3600) };
+    if (tok === 'good' || tok === 'good2') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(Object.assign(base, { aud: GCLIENT, sub: tok === 'good' ? 'sub-fixed' : 'sub-two' }))); }
+    if (tok === 'wrongaud') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(Object.assign(base, { aud: 'someone-else.apps.googleusercontent.com' }))); }
+    if (tok === 'expired') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(Object.assign(base, { aud: GCLIENT, exp: '1000' }))); }
+    res.writeHead(400, { 'content-type': 'application/json' }); res.end('{"error":"invalid_token"}');
+  });
+  await new Promise(r => gmock.listen(0, '127.0.0.1', r));
+  process.env.GOOGLE_CLIENT_ID = GCLIENT;
+  process.env.GOOGLE_TOKENINFO_URL = 'http://127.0.0.1:' + gmock.address().port + '/tokeninfo';
   process.env.OPENAI_API_KEY = 'test-key';
   process.env.OPENAI_BASE_URL = 'http://127.0.0.1:' + mock.address().port;
   const { server, db } = require('../server/server.js');
@@ -47,8 +60,22 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     assert.strictEqual(r.status, 409); ok('duplicate username rejected (case-insensitive)');
     r = await call('POST', '/api/auth/login', { username: 'nour_7', password: 'wrong' }); assert.strictEqual(r.status, 401); ok('wrong password rejected');
     r = await call('POST', '/api/auth/login', { username: 'nour_7', password: 'secret12' }); assert.strictEqual(r.status, 200); ok('login');
+    for (let i = 0; i < 12; i++) r = await call('POST', '/api/auth/login', { username: 'guess_me', password: 'x' + i });
+    assert.strictEqual(r.status, 429); r = await call('POST', '/api/auth/login', { username: 'nour_7', password: 'secret12' }); assert.strictEqual(r.status, 200);
+    ok('password guessing on one account is rate-limited (429) without affecting other accounts on the same IP');
+    for (let i = 0; i < 25; i++) { r = await call('POST', '/api/auth/signup', { username: 'class_kid' + i, password: 'secret12', gradeLevel: 9 }); assert.strictEqual(r.status, 200, 'signup ' + i + ' -> ' + r.status); }
+    ok('25 students can sign up from the same IP within a minute (school network)');
     r = await call('GET', '/api/me', null, 'forged.token'); assert.strictEqual(r.status, 401); ok('forged token rejected');
-    r = await call('POST', '/api/auth/google', { credential: 'x' }); assert.strictEqual(r.status, 501); ok('google sign-in reports not configured');
+    r = await call('GET', '/api/health'); assert.strictEqual(r.body.google, GCLIENT); ok('health exposes the Google client id (the login screen then shows the Google button)');
+    r = await call('POST', '/api/auth/google', { credential: 'garbage' }); assert.strictEqual(r.status, 401); ok('Google: invalid token rejected');
+    r = await call('POST', '/api/auth/google', { credential: 'wrongaud' }); assert.strictEqual(r.status, 401); ok('Google: token issued for a different app rejected');
+    r = await call('POST', '/api/auth/google', { credential: 'expired' }); assert.strictEqual(r.status, 401); ok('Google: expired token rejected');
+    r = await call('POST', '/api/auth/google', { credential: 'good', gradeLevel: 8 }); assert.strictEqual(r.status, 200); const gUser = r.body.user;
+    assert.ok(/^pilot\d{4}$/.test(gUser.username), 'random pilot username, got ' + gUser.username); assert.ok(!JSON.stringify(gUser).includes('Ahmed') && !JSON.stringify(gUser).includes('real.name'), 'real name/email never exposed'); assert.strictEqual(gUser.gradeLevel, 8);
+    ok('Google: new account created with a random pilot name (' + gUser.username + ') — real name & email not exposed');
+    r = await call('POST', '/api/auth/google', { credential: 'good' }); assert.strictEqual(r.body.user.uid, gUser.uid); ok('Google: same Google account → same user (no duplicates)');
+    r = await call('POST', '/api/auth/google', { credential: 'good2', gradeLevel: 9, username: 'sara_9' }); assert.strictEqual(r.body.user.username, 'sara_9'); ok('Google: chosen username used for a second account');
+    r = await call('GET', '/api/leaderboard/public'); assert.ok(!JSON.stringify(r.body).includes('Ahmed')); ok('public leaderboard never shows the Google real name');
 
     r = await call('GET', '/api/questions?subject=math&grade=10&limit=5', null, tok);
     assert.strictEqual(r.body.questions.length, 5); assert.strictEqual(r.body.questions[0].correctOptionIndex, undefined); ok('fetchQuestions hides the answer key from students');
@@ -104,5 +131,5 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     r = await call('GET', '/api/classes/' + code + '/answers.csv', null, tt); assert.ok(r.body.includes('username') && r.body.includes('nour_7')); ok('class CSV export');
     console.log('\nAll ' + pass + ' API checks passed ✔');
   } catch (e) { console.error('FAILED after ' + pass + ' checks:', e); process.exitCode = 1; }
-  finally { server.close(); try { mock.close(); } catch (e) {} db.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
+  finally { server.close(); try { mock.close(); gmock.close(); } catch (e) {} db.close(); fs.rmSync(tmp, { recursive: true, force: true }); }
 })();

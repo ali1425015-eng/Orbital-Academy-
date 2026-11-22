@@ -48,7 +48,7 @@ function open() {
 /* Loads data/questions.json into SQLite when the bank file changed. Keeps
    the calibrated ratings of questions that already exist. */
 function seedQuestions(db, file) {
-  file = file || path.join(DATA_DIR, 'questions.json');
+  file = file || path.join(__dirname, '..', 'data', 'questions.json');   // ships with the code, NOT on the persistent disk
   if (!fs.existsSync(file)) throw new Error('Question bank not found: ' + file + ' — run `npm run build`');
   const stat = fs.statSync(file);
   const sig = stat.size + ':' + Math.round(stat.mtimeMs);

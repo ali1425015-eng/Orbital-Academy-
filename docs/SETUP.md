@@ -1,8 +1,10 @@
+> **للنشر أونلاين على رابط واحد اقرأ [`DEPLOY.md`](DEPLOY.md).**
+
 # Setup & deployment
 
 ## 1. Local (laptop / school lab server)
 ```bash
-node --version        # must be ≥ 22.5 (built-in SQLite)
+node --version        # must be ≥ 22.13 (built-in SQLite, no flag needed)
 npm start             # http://localhost:8080
 ```
 Students on the same Wi-Fi open `http://<laptop-ip>:8080`.

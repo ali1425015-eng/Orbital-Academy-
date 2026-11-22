@@ -1,0 +1,13 @@
+node_modules
+.git
+.env
+data/orbital.db*
+data/.secret
+research
+ml
+tests
+generator
+tools
+docs
+dist
+*.zip

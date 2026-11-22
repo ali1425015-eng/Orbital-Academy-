@@ -84,7 +84,7 @@ const blob = zlib.gzipSync(JSON.stringify(files), { level: 9 }).toString('base64
 const launcher = `#!/usr/bin/env node
 /* ==========================================================================
    ORBITAL ACADEMY v${VERSION} — single-file installer + launcher
-   Requires Node.js >= 22.5. No npm install needed.
+   Requires Node.js >= 22.13. No npm install needed.
 
      node orbital-academy-server.js            → extract (first run) and start on http://localhost:8080
      PORT=3000 node orbital-academy-server.js  → another port
@@ -102,7 +102,7 @@ const VERSION = '${VERSION}';
 const PACK = '${blob}';
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), { spawnSync, spawn } = require('child_process');
 const [maj, min] = process.versions.node.split('.').map(Number);
-if (maj < 22 || (maj === 22 && min < 5)) { console.error('Orbital Academy needs Node.js 22.5 or newer (you have ' + process.version + '). Download: https://nodejs.org'); process.exit(1); }
+if (maj < 22 || (maj === 22 && min < 13)) { console.error('Orbital Academy needs Node.js 22.13 or newer (you have ' + process.version + '). Download: https://nodejs.org'); process.exit(1); }
 const DIR = process.env.OA_DIR || path.join(__dirname, 'orbital-academy-app');
 const marker = path.join(DIR, '.bundle-version');
 let current = null; try { current = fs.readFileSync(marker, 'utf8').trim(); } catch (e) {}
