@@ -37,18 +37,18 @@
   RemoteApi.prototype.updateMe = function (b) { return this.req('PATCH', 'me', b).then(function (r) { return r.user; }); };
   RemoteApi.prototype.publicBoard = function () { return this.req('GET', 'leaderboard/public').then(function (r) { return r.top; }); };
   RemoteApi.prototype.board = function (scope) { return this.req('GET', 'leaderboard?scope=' + scope); };
-  RemoteApi.prototype.startMission = function (subject, durationSec) { return this.req('POST', 'missions', { subject: subject, durationSec: durationSec }).then(function (r) { return r.mission; }); };
+  RemoteApi.prototype.startMission = function (subject, o) { o = o || {}; return this.req('POST', 'missions', { subject: subject, mode: o.mode, target: o.target, durationSec: o.durationSec }).then(function (r) { return r.mission; }); };
   RemoteApi.prototype.next = function (mid, ctx) { return this.req('POST', 'missions/' + mid + '/next', ctx); };
   RemoteApi.prototype.answer = function (mid, b) { return this.req('POST', 'missions/' + mid + '/answer', b); };
   RemoteApi.prototype.fifty = function (mid, qid) { return this.req('POST', 'missions/' + mid + '/fifty', { questionId: qid }); };
   RemoteApi.prototype.end = function (mid, survived) { return this.req('POST', 'missions/' + mid + '/end', { survived: survived }); };
-  RemoteApi.prototype.tutor = function (qid, sel) { return this.req('POST', 'tutor', { questionId: qid, selected: sel }); };
-  RemoteApi.prototype.ask = function (qid, msg, mid) { return this.req('POST', 'tutor/ask', { questionId: qid, message: msg, missionId: mid }); };
+  RemoteApi.prototype.tutor = function (qid, sel, lang) { return this.req('POST', 'tutor', { questionId: qid, selected: sel, lang: lang }); };
+  RemoteApi.prototype.ask = function (qid, msg, mid, lang) { return this.req('POST', 'tutor/ask', { questionId: qid, message: msg, missionId: mid, lang: lang }); };
   RemoteApi.prototype.progress = function () { return this.req('GET', 'progress'); };
   RemoteApi.prototype.classes = function () { return this.req('GET', 'classes').then(function (r) { return r.classes; }); };
   RemoteApi.prototype.createClass = function (name) { return this.req('POST', 'classes', { name: name }); };
   RemoteApi.prototype.classView = function (code) { return this.req('GET', 'classes/' + encodeURIComponent(code)); };
-  RemoteApi.prototype.questions = function (subject, grade, limit) { return this.req('GET', 'questions?subject=' + subject + '&grade=' + grade + '&limit=' + (limit || 10)).then(function (r) { return r.questions; }); };
+  RemoteApi.prototype.questions = function (subject, grade, limit, lang) { return this.req('GET', 'questions?subject=' + subject + '&grade=' + grade + '&limit=' + (limit || 10) + '&lang=' + (lang || 'ar')).then(function (r) { return r.questions; }); };
   RemoteApi.prototype.download = function (path, name) {
     return fetch('api/' + path, { headers: { authorization: 'Bearer ' + this.token } }).then(function (r) { return r.blob(); }).then(function (b) { saveBlob(b, name); });
   };
@@ -64,7 +64,7 @@
     Bank.chunks[key] = rows.map(function (r) {
       var subject = key.split('-')[0], rt = qr && qr[r[0]];
       return { questionId: r[0], gradeLevel: r[1], subject: subject, difficulty: r[2], difficultyLabel: ['', 'Easy', 'Medium', 'Hard'][r[2]], conceptTag: r[3], questionText: r[4], options: r[5],
-        correctOptionIndex: r[6], explanation: r[7], optionNotes: r[8], lang: r[9], rating: rt ? rt[0] : null, ratingN: rt ? rt[1] : 0 };
+        correctOptionIndex: r[6], explanation: r[7], optionNotes: r[8], lang: r[9], ui: r[10] || null, rating: rt ? rt[0] : null, ratingN: rt ? rt[1] : 0 };
     });
     (Bank.waiting[key] || []).forEach(function (f) { f(); }); delete Bank.waiting[key];
   };
@@ -79,10 +79,9 @@
       document.head.appendChild(s);
     });
   };
-  Bank.pool = function (subject, grade) {
-    var subs = subject === 'mixed' ? Object.keys(C.SUBJECTS) : [subject], keys = [];
-    subs.forEach(function (s) { keys.push(s + '-g' + grade); });   // ONLY the student's own grade
-    return Promise.all(keys.map(Bank.loadChunk)).then(function (arrs) { return [].concat.apply([], arrs); });
+  /* ONLY the student's own grade; learning track (grade 0): only the interface language */
+  Bank.pool = function (subject, grade, ui) {
+    return Bank.loadChunk(subject + '-g' + grade).then(function (rows) { return +grade === 0 ? rows.filter(function (q) { return q.ui === (ui === 'en' ? 'en' : 'ar'); }) : rows; });
   };
 
   /* ------------------------------ Local ------------------------------ */
@@ -105,6 +104,7 @@
     var h = 0x811c9dc5, out = ''; for (var r = 0; r < 8; r++) { for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i) + r; h = Math.imul(h, 16777619); } out += ('0000000' + (h >>> 0).toString(16)).slice(-8); }
     return Promise.resolve(out);
   }
+  function validGrade(g) { return g !== undefined && g !== null && g !== '' && (+g === 0 || (+g >= 7 && +g <= 12)); }
   function uid() { return 'L-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function fail(code) { var e = new Error(code); e.code = code; return Promise.reject(e); }
 
@@ -125,7 +125,7 @@
     var code = String(b.classCode || '').trim().toUpperCase(); if (code && !self.db.classes[code]) return fail('bad_class_code');
     var salt = Math.random().toString(36).slice(2);
     return sha(salt + ':' + b.password).then(function (h) {
-      var u = S.newUser({ uid: uid(), username: name, displayName: b.displayName || name, role: b.role === 'teacher' ? 'teacher' : 'student', gradeLevel: +b.gradeLevel || 9, avatar: b.avatar, classCode: code, now: Date.now() });
+      var u = S.newUser({ uid: uid(), username: name, displayName: b.displayName || name, role: b.role === 'teacher' ? 'teacher' : 'student', gradeLevel: validGrade(b.gradeLevel) ? +b.gradeLevel : 9, avatar: b.avatar, classCode: code, now: Date.now() });
       self.db.users[u.uid] = u; self.db.creds[name.toLowerCase()] = { uid: u.uid, salt: salt, hash: h }; LocalStore.save(); self.setSession(u.uid);
       return S.publicUser(u);
     });
@@ -135,7 +135,7 @@
     if (!c) return fail('bad_credentials');
     return sha(c.salt + ':' + b.password).then(function (h) {
       if (h !== c.hash) throw { code: 'bad_credentials' };
-      var u = self.db.users[c.uid]; if (b.gradeLevel && u.role === 'student') u.gradeLevel = +b.gradeLevel;
+      var u = self.db.users[c.uid]; if (validGrade(b.gradeLevel) && u.role === 'student') u.gradeLevel = +b.gradeLevel;
       LocalStore.save(); self.setSession(u.uid); return S.publicUser(u);
     });
   };
@@ -144,7 +144,7 @@
   L.me = function () { try { return Promise.resolve(S.publicUser(this.user())); } catch (e) { return Promise.reject(e); } };
   L.updateMe = function (b) {
     var u = this.user();
-    if (b.gradeLevel) u.gradeLevel = +b.gradeLevel; if (b.avatar) u.avatar = b.avatar; if (b.displayName) u.displayName = String(b.displayName).slice(0, 30);
+    if (validGrade(b.gradeLevel)) u.gradeLevel = +b.gradeLevel; if (b.avatar) u.avatar = b.avatar; if (b.displayName) u.displayName = String(b.displayName).slice(0, 30);
     if (b.classCode != null) { var c = String(b.classCode).trim().toUpperCase(); if (c && !this.db.classes[c]) return fail('bad_class_code'); u.classCode = c; }
     LocalStore.save(); return Promise.resolve(S.publicUser(u));
   };
@@ -161,21 +161,23 @@
     return Promise.resolve({ scope: scope, top: list.slice(0, 10).map(function (u) { return { username: u.username, displayName: u.displayName, avatar: u.avatar, totalXP: u.totalXP, weeklyXP: u.weeklyXP, currentLevel: u.currentLevel, gradeLevel: u.gradeLevel }; }),
       me: { rank: me.role === 'student' ? (rank < 0 ? list.length + 1 : rank + 1) : null, score: me[key], total: list.length } });
   };
-  L.startMission = function (subject, durationSec) {
-    var u = this.user(), m = S.startMission(u, { missionId: uid(), subject: subject, durationSec: durationSec }, Date.now());
+  L.startMission = function (subject, o) {
+    o = o || {};
+    var u = this.user(); if (C.subjectsFor(u.gradeLevel).indexOf(subject) < 0) return fail('bad_subject');
+    var m = S.startMission(u, { missionId: uid(), subject: subject, mode: o.mode, target: o.target, durationSec: o.durationSec }, Date.now());
     this.db.missions[m.missionId] = m; LocalStore.save();
-    return Promise.resolve({ missionId: m.missionId, subject: m.subject, durationSec: m.durationSec, startedAt: m.startedAt });
+    return Promise.resolve({ missionId: m.missionId, subject: m.subject, mode: m.mode, target: m.target, durationSec: m.durationSec, startedAt: m.startedAt });
   };
   L.next = function (mid, ctx) {
     var self = this, u = this.user(), m = this.db.missions[mid];
     if (!m || m.endedAt) return fail('mission_not_found');
-    var subj = ctx && ctx.subject && (m.subject === 'mixed' || ctx.subject === m.subject) ? ctx.subject : m.subject;
-    return Bank.pool(subj, u.gradeLevel).then(function (pool) {
+    if (m.mode === 'count' && m.answered >= m.target) return fail('mission_complete');
+    return Bank.pool(m.subject, u.gradeLevel, ctx && ctx.lang).then(function (pool) {
       var r = S.nextQuestion(u, m, pool, ctx, OA.Model, Date.now(), function () { return self.rng.next(); });
       if (!r) throw { code: 'no_questions' };
       self.cache[r.q.questionId] = r.q;
       return { question: S.publicQuestion(r.q), predicted: r.predicted, risk: r.risk, riskThreshold: OA.Model ? OA.Model.disengage.threshold : 0.45, mastery: r.mastery, elo: r.elo,
-        conceptAr: (C.ALL[r.q.conceptTag] || {}).ar, expectedSec: OA.Rules.expectedSeconds(r.q) };
+        conceptAr: C.name(r.q.conceptTag, 'ar'), conceptEn: C.name(r.q.conceptTag, 'en'), expectedSec: OA.Rules.expectedSeconds(r.q) };
     });
   };
   L.answer = function (mid, b) {
@@ -198,11 +200,11 @@
     var r = S.endMission(u, m, { survived: survived }, Date.now()); if (r.error) return fail(r.error);
     LocalStore.save(); r.user = S.publicUser(u); return Promise.resolve(r);
   };
-  L.tutor = function (qid, sel) { var q = this.cache[qid], u = this.user(); return Promise.resolve({ text: OA.TutorLocal.explain(q, sel, u.gradeLevel), provider: 'local' }); };
-  L.ask = function (qid, msg, mid) {
+  L.tutor = function (qid, sel, lang) { var q = this.cache[qid], u = this.user(); return Promise.resolve({ text: OA.TutorLocal.explain(q, sel, u.gradeLevel, lang), provider: 'local' }); };
+  L.ask = function (qid, msg, mid, lang) {
     var q = this.cache[qid], m = mid && this.db.missions[mid], u = this.user();
     var before = !!(m && !m.endedAt && m.served && m.served.id === qid);
-    return Promise.resolve({ text: OA.TutorLocal.askLocal(q, u.gradeLevel, before), provider: 'local', before: before });
+    return Promise.resolve({ text: OA.TutorLocal.askLocal(q, u.gradeLevel, before, lang), provider: 'local', before: before });
   };
   L.progress = function () {
     var u = this.user(), mine = this.db.answers.filter(function (a) { return a.uid === u.uid; });
@@ -237,9 +239,9 @@
     });
     return Promise.resolve({ class: { code: c.code, name: c.name }, students: students, concepts: Object.keys(agg).map(function (k) { var a = agg[k]; return { tag: a.tag, ar: a.ar, subject: a.subject, avgMastery: a.sum / a.n, students: a.n }; }).sort(function (a, b) { return a.avgMastery - b.avgMastery; }) });
   };
-  L.questions = function (subject, grade, limit) {
+  L.questions = function (subject, grade, limit, lang) {
     var self = this, u = this.user();
-    return Bank.loadChunk(subject + '-g' + grade).then(function (rows) { return self.rng.shuffle(rows).slice(0, limit || 10).map(function (q) { return u.role === 'teacher' ? q : S.publicQuestion(q); }); });
+    return Bank.pool(subject, grade, lang).then(function (rows) { return self.rng.shuffle(rows).slice(0, limit || 10).map(function (q) { return u.role === 'teacher' ? q : S.publicQuestion(q); }); });
   };
   function csv(rows) {
     if (!rows.length) return 'empty\n'; var cols = Object.keys(rows[0]);

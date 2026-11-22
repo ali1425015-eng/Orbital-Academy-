@@ -19,7 +19,7 @@ function open() {
     CREATE TABLE IF NOT EXISTS questions (
       questionId TEXT PRIMARY KEY, gradeLevel INTEGER NOT NULL, subject TEXT NOT NULL, difficulty INTEGER NOT NULL, difficultyLabel TEXT,
       questionText TEXT NOT NULL, options TEXT NOT NULL, correctOptionIndex INTEGER NOT NULL, conceptTag TEXT NOT NULL,
-      explanation TEXT, optionNotes TEXT, lang TEXT, source TEXT,
+      explanation TEXT, optionNotes TEXT, lang TEXT, ui TEXT, source TEXT,
       rating REAL, ratingN INTEGER NOT NULL DEFAULT 0, answered INTEGER NOT NULL DEFAULT 0, correctCount INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1);
     CREATE INDEX IF NOT EXISTS idx_q_sg ON questions(subject, gradeLevel, difficulty);
     CREATE INDEX IF NOT EXISTS idx_q_concept ON questions(conceptTag);
@@ -42,6 +42,10 @@ function open() {
     CREATE TABLE IF NOT EXISTS tutor_cache (k TEXT PRIMARY KEY, text TEXT NOT NULL, provider TEXT, createdAt INTEGER);
     CREATE TABLE IF NOT EXISTS classes (code TEXT PRIMARY KEY, name TEXT, teacherUid TEXT NOT NULL, createdAt INTEGER);
   `);
+  // migration for databases created by older versions (e.g. the live Railway volume): add the "ui" column
+  const cols = db.prepare('PRAGMA table_info(questions)').all().map(c => c.name);
+  if (!cols.includes('ui')) db.exec('ALTER TABLE questions ADD COLUMN ui TEXT');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_q_pool ON questions(subject, gradeLevel, ui)');
   return db;
 }
 
@@ -56,17 +60,17 @@ function seedQuestions(db, file) {
   const count = db.prepare('SELECT COUNT(*) AS n FROM questions').get().n;
   if (row && row.v === sig && count > 0) return { seeded: false, count };
   const bank = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const up = db.prepare(`INSERT INTO questions (questionId, gradeLevel, subject, difficulty, difficultyLabel, questionText, options, correctOptionIndex, conceptTag, explanation, optionNotes, lang, source, active)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)
+  const up = db.prepare(`INSERT INTO questions (questionId, gradeLevel, subject, difficulty, difficultyLabel, questionText, options, correctOptionIndex, conceptTag, explanation, optionNotes, lang, ui, source, active)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)
     ON CONFLICT(questionId) DO UPDATE SET gradeLevel=excluded.gradeLevel, subject=excluded.subject, difficulty=excluded.difficulty, difficultyLabel=excluded.difficultyLabel,
       questionText=excluded.questionText, options=excluded.options, correctOptionIndex=excluded.correctOptionIndex, conceptTag=excluded.conceptTag,
-      explanation=excluded.explanation, optionNotes=excluded.optionNotes, lang=excluded.lang, source=excluded.source, active=1,
+      explanation=excluded.explanation, optionNotes=excluded.optionNotes, lang=excluded.lang, ui=excluded.ui, source=excluded.source, active=1,
       rating=CASE WHEN questions.questionText = excluded.questionText THEN questions.rating ELSE NULL END,
       ratingN=CASE WHEN questions.questionText = excluded.questionText THEN questions.ratingN ELSE 0 END`);
   db.exec('BEGIN');
   try {
     db.exec('UPDATE questions SET active = 0');
-    for (const q of bank) up.run(q.questionId, q.gradeLevel, q.subject, q.difficulty, q.difficultyLabel, q.questionText, JSON.stringify(q.options), q.correctOptionIndex, q.conceptTag, q.explanation, JSON.stringify(q.optionNotes), q.lang, q.source);
+    for (const q of bank) up.run(q.questionId, q.gradeLevel, q.subject, q.difficulty, q.difficultyLabel, q.questionText, JSON.stringify(q.options), q.correctOptionIndex, q.conceptTag, q.explanation, JSON.stringify(q.optionNotes), q.lang, q.ui || null, q.source);
     db.prepare('INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v').run('bank_sig', sig);
     db.exec('COMMIT');
   } catch (e) { db.exec('ROLLBACK'); throw e; }

@@ -33,6 +33,13 @@ for (const q of bank) {
   if (/NaN|undefined|Infinity|null/.test(q.questionText + q.options.join(''))) bad(q, 'NaN/undefined in text');
 
   // ---------- independent answer checks ----------
+  // track rules: learning questions (grade 0) carry a pool language and use learning subjects only
+  const subj = Concepts.SUBJECTS[q.subject];
+  if (!subj) bad(q, 'unknown subject');
+  else if (q.gradeLevel === 0) { if (subj.track !== 'learning') bad(q, 'grade 0 but curriculum subject'); if (!['ar', 'en'].includes(q.ui)) bad(q, 'learning question without ui language'); }
+  else if (subj.track !== 'curriculum') bad(q, 'learning subject inside a school grade');
+  if (q.gradeLevel === 0 && q.subject !== 'lenglish' && q.ui === 'en' && /[\u0600-\u06FF]/.test(q.questionText + q.options.join(''))) bad(q, 'Arabic text in an English learning question');
+  if (q.gradeLevel === 0 && q.ui === 'ar' && q.optionNotes.some((n, i) => i !== q.correctOptionIndex && n && !/[\u0600-\u06FF]/.test(n))) bad(q, 'English note in an Arabic learning question');
   const A = q.options[q.correctOptionIndex], n = nums(q.questionText), t = q.questionText;
   let expect = null;
   try {
@@ -64,6 +71,14 @@ for (const q of bank) {
       case 'faraday': expect = toNum(n[0]) * toNum(n[1]) / toNum(n[2]); break;
       case 'capacitor': { const C = toNum(n[0]), V = toNum(n[1]); expect = t.includes('الطاقة') ? C * V * V / 2 : C * V; break; }
       case 'coulomb': expect = 9e9 * toNum(n[0]) * 1e-6 * toNum(n[1]) * 1e-6 / (toNum(n[2]) ** 2); break;
+      case 'lm_mental': case 'lm_order': {   // evaluate the expression with JS precedence (same as maths)
+        const ex = n[0].replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+        if (!/^[\d\s+\-*/().]+$/.test(ex)) throw new Error('unexpected expression ' + ex);
+        expect = Function('return (' + ex + ')')(); break; }
+      case 'lm_equation': { const e2 = n[0].replace(/−/g, '-'); let m;
+        if ((m = e2.match(/^x \+ (\d+) = (\d+)$/))) expect = +m[2] - +m[1]; else if ((m = e2.match(/^(\d+)x = (\d+)$/))) expect = +m[2] / +m[1];
+        else if ((m = e2.match(/^x ÷ (\d+) = (\d+)$/))) expect = +m[2] * +m[1]; else if ((m = e2.match(/^(\d+)x \+ (\d+) = (\d+)$/))) expect = (+m[3] - +m[2]) / +m[1];
+        if (expect !== null && !close(toNum(A.replace('x =', '')), expect)) bad(q, 'equation ' + A + ' ≠ ' + expect); expect = null; break; }
       case 'mean_median': { const v = n[0].split('،').map(toNum); if (t.includes('الوسط الحسابي')) expect = v.reduce((a, b) => a + b, 0) / v.length; else expect = v.slice().sort((a, b) => a - b)[(v.length - 1) / 2]; break; }
     }
   } catch (e) { bad(q, 'checker could not parse: ' + e.message); }

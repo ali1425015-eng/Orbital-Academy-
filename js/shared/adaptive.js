@@ -29,7 +29,7 @@
   function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
 
   function newLearner(grade) {
-    return { grade: grade || 9, elo: {}, n: {}, bkt: {}, attempts: {}, sr: {}, seen: {}, recent: [], recentRapid: [], consecWrong: 0 };
+    return { grade: grade != null ? +grade : 9, elo: {}, n: {}, bkt: {}, attempts: {}, sr: {}, seen: {}, recent: [], recentRapid: [], consecWrong: 0 };
   }
 
   /* Question prior difficulty: the generator's level, shifted by how far the

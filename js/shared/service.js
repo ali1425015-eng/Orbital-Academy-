@@ -6,15 +6,15 @@
   else (root.OA = root.OA || {}).Service = factory(root.OA.Adaptive, root.OA.Rules, root.OA.Concepts);
 })(typeof self !== 'undefined' ? self : this, function (A, R, C) {
   var BADGES = {
-    first_mission: { ar: 'أول مهمة', icon: '🚀', desc: 'أنهيت أول مهمة' },
-    combo_5: { ar: 'سلسلة ×5', icon: '🔥', desc: '5 إجابات صحيحة متتالية' },
-    combo_10: { ar: 'سلسلة ×10', icon: '☄️', desc: '10 إجابات صحيحة متتالية' },
-    focus_master: { ar: 'سيد التركيز', icon: '🎯', desc: 'مهمة كاملة (10+ أسئلة) بلا تخمين سريع' },
-    concept_master: { ar: 'متقن مفهوم', icon: '🧠', desc: 'وصلت إتقان 95% في مفهوم' },
-    survivor: { ar: 'الناجي', icon: '🛡️', desc: 'أعدت المركبة سالمة 5 مرات' },
-    xp_1000: { ar: 'ألف نقطة', icon: '💎', desc: 'جمعت 1000 XP' },
-    streak_3: { ar: '3 أيام متتالية', icon: '📅', desc: 'لعبت 3 أيام متتالية' },
-    polyglot: { ar: 'متعدد المهارات', icon: '🌐', desc: 'أنهيت مهام في 4 مواد' }
+    first_mission: { ar: 'أول مهمة', en: 'First mission', icon: '🚀', desc: 'أنهيت أول مهمة', descEn: 'Finished your first mission' },
+    combo_5: { ar: 'سلسلة ×5', en: 'Streak ×5', icon: '🔥', desc: '5 إجابات صحيحة متتالية', descEn: '5 correct answers in a row' },
+    combo_10: { ar: 'سلسلة ×10', en: 'Streak ×10', icon: '☄️', desc: '10 إجابات صحيحة متتالية', descEn: '10 correct answers in a row' },
+    focus_master: { ar: 'سيد التركيز', en: 'Focus master', icon: '🎯', desc: 'مهمة كاملة (10+ أسئلة) بلا تخمين سريع', descEn: 'A full mission (10+ questions) with no rapid guessing' },
+    concept_master: { ar: 'متقن مفهوم', en: 'Concept master', icon: '🧠', desc: 'وصلت إتقان 95% في مفهوم', descEn: 'Reached 95% mastery in a concept' },
+    survivor: { ar: 'الناجي', en: 'Survivor', icon: '🛡️', desc: 'أعدت المركبة سالمة 5 مرات', descEn: 'Brought the ship home safely 5 times' },
+    xp_1000: { ar: 'ألف نقطة', en: '1,000 XP', icon: '💎', desc: 'جمعت 1000 XP', descEn: 'Earned 1,000 XP' },
+    streak_3: { ar: '3 أيام متتالية', en: '3-day streak', icon: '📅', desc: 'لعبت 3 أيام متتالية', descEn: 'Played 3 days in a row' },
+    polyglot: { ar: 'متعدد المهارات', en: 'All-rounder', icon: '🌐', desc: 'أنهيت مهام في 4 مواد', descEn: 'Finished missions in 4 subjects' }
   };
 
   function dayKey(ms) { var d = new Date(ms); return d.getUTCFullYear() + '-' + (d.getUTCMonth() + 1) + '-' + d.getUTCDate(); }
@@ -28,9 +28,9 @@
   function newUser(fields) {
     var u = {
       uid: fields.uid, username: fields.username, displayName: fields.displayName || fields.username, role: fields.role || 'student',
-      gradeLevel: fields.gradeLevel || 9, avatar: fields.avatar || '🧑‍🚀', classCode: fields.classCode || '', totalXP: 0, currentLevel: 1,
+      gradeLevel: fields.gradeLevel != null ? +fields.gradeLevel : 9, avatar: fields.avatar || '🧑‍🚀', classCode: fields.classCode || '', totalXP: 0, currentLevel: 1,
       weeklyXP: 0, weekKey: '', streakDays: 0, lastActiveDay: '', badges: [], stats: { missions: 0, survived: 0, subjects: {}, answered: 0, correct: 0, rapid: 0, focusSum: 0, focusN: 0 },
-      resources: { oxygen: 100, power: 100, shield: 100, comms: 100 }, learner: A.newLearner(fields.gradeLevel || 9), createdAt: fields.now || Date.now()
+      resources: { oxygen: 100, power: 100, shield: 100, comms: 100 }, learner: A.newLearner(fields.gradeLevel != null ? +fields.gradeLevel : 9), createdAt: fields.now || Date.now()
     };
     return u;
   }
@@ -50,7 +50,9 @@
   function startMission(u, opts, now) {
     u.learner.grade = u.gradeLevel;
     return {
-      missionId: opts.missionId, uid: u.uid, subject: opts.subject || 'mixed', durationSec: Math.max(120, Math.min(1800, opts.durationSec || 300)),
+      missionId: opts.missionId, uid: u.uid, subject: opts.subject, mode: opts.mode === 'count' ? 'count' : 'time',
+      target: opts.mode === 'count' ? Math.max(5, Math.min(50, parseInt(opts.target, 10) || 10)) : null,
+      durationSec: opts.mode === 'count' ? 1800 : Math.max(120, Math.min(1800, opts.durationSec || 300)),
       startedAt: now, endedAt: null, answered: 0, correct: 0, rapid: 0, xp: 0, combo: 0, bestCombo: 0, tabSwitches: 0, focus: 1,
       served: null, servedIds: {}, survived: null, concepts: {}, subs: {}
     };
@@ -81,6 +83,7 @@
      Returns the result + the new question rating to persist. */
   function answer(u, m, q, input, now) {
     if (!m.served || m.served.id !== q.questionId) return { error: 'not_served' };
+    if (m.mode === 'count' && m.answered >= m.target) return { error: 'mission_complete' };
     var serverMs = now - m.served.at, hinted = !!m.served.hint;
     var ms = Math.max(0, Math.min(input.ms || serverMs, serverMs + 1500)); // client time, but never longer than the server saw
     m.served = null;
@@ -128,14 +131,15 @@
     m.endedAt = now;
     var elapsed = (now - m.startedAt) / 1000;
     // "survived" only counts if the mission actually lasted (no instant-finish farming)
-    m.survived = !!(input && input.survived) && elapsed >= m.durationSec * 0.9 && m.answered >= 3;
-    // completion bonus scales with how much of the mission was actually flown (no start-and-quit farming)
-    var flown = Math.min(1, elapsed / m.durationSec);
+    var done = m.mode === 'count' ? m.answered >= m.target : elapsed >= m.durationSec * 0.9;
+    m.survived = !!(input && input.survived) && done && m.answered >= 3;
+    // completion bonus scales with how much of the mission was actually done (no start-and-quit farming)
+    var flown = m.mode === 'count' ? Math.min(1, m.answered / m.target) : Math.min(1, elapsed / m.durationSec);
     var bonus = m.answered >= 3 ? Math.round(flown * R.missionBonus({ answered: m.answered, correct: m.correct, rapid: m.rapid, survived: m.survived })) : 0;
     m.xp += bonus; addXP(u, bonus, now);
     var st = u.stats; st.missions++; if (m.survived) st.survived++;
     // a mission counts for every subject the student actually answered in (the subject is chosen per crisis)
-    var played = Object.keys(m.subs || {}); if (!played.length && m.subject !== 'mixed') played = [m.subject];
+    var played = Object.keys(m.subs || {}); if (!played.length && m.subject) played = [m.subject];
     played.forEach(function (sb) { st.subjects[sb] = (st.subjects[sb] || 0) + 1; });
     st.focusSum += m.focus; st.focusN++;
     var nb = [];
@@ -143,10 +147,10 @@
     if (m.answered >= 10 && m.rapid === 0) award(u, 'focus_master', nb);
     if (st.survived >= 5) award(u, 'survivor', nb);
     if (u.streakDays >= 3) award(u, 'streak_3', nb);
-    if (['math', 'science', 'english', 'arabic'].every(function (s) { return st.subjects[s]; })) award(u, 'polyglot', nb);
+    if (Object.keys(st.subjects).length >= 4) award(u, 'polyglot', nb);
     if (u.totalXP >= 1000) award(u, 'xp_1000', nb);
     return { bonus: bonus, totalXP: u.totalXP, level: u.currentLevel, rank: R.rank(u.currentLevel), badges: nb, survived: m.survived,
-      summary: { answered: m.answered, correct: m.correct, rapid: m.rapid, xp: m.xp, bestCombo: m.bestCombo, focus: m.focus, concepts: m.concepts, durationSec: Math.round(elapsed) } };
+      summary: { mode: m.mode, target: m.target, subject: m.subject, answered: m.answered, correct: m.correct, rapid: m.rapid, xp: m.xp, bestCombo: m.bestCombo, focus: m.focus, concepts: m.concepts, durationSec: Math.round(elapsed) } };
   }
 
   function progress(u) {
@@ -165,7 +169,7 @@
   /* strips the answer before sending a question to the client (server mode) */
   function publicQuestion(q) {
     return { questionId: q.questionId, gradeLevel: q.gradeLevel, subject: q.subject, difficulty: q.difficulty, difficultyLabel: q.difficultyLabel,
-      questionText: q.questionText, options: q.options, conceptTag: q.conceptTag, lang: q.lang };
+      questionText: q.questionText, options: q.options, conceptTag: q.conceptTag, lang: q.lang, ui: q.ui || null };
   }
 
   return { BADGES: BADGES, dayKey: dayKey, weekKey: weekKey, newUser: newUser, touchActivity: touchActivity, startMission: startMission, nextQuestion: nextQuestion,

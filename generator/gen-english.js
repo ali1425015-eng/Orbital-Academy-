@@ -329,4 +329,5 @@ T.gerund_inf = r => {
   return { d: 1, q: 'Choose the correct answer:\n' + subj + ' ' + verb + ' ___ ' + obj + '.', m, e: g ? b3 + ' + v-ing: ' + ing + '.' : b3 + ' + to + مصدر: to ' + base + '.', lang: 'en' };
 };
 
+Object.defineProperty(T, '__data', { value: { V, S, IRR, ADJ, PL, VOC }, enumerable: false });
 module.exports = T;

@@ -81,10 +81,31 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     assert.strictEqual(r.body.questions.length, 5); assert.strictEqual(r.body.questions[0].correctOptionIndex, undefined); ok('fetchQuestions hides the answer key from students');
 
     r = await call('POST', '/api/missions', { subject: 'math', durationSec: 120 }, tok); const mid = r.body.mission.missionId; ok('mission started');
-    // every served question must belong to the student's own grade (10) — 120 draws across all subjects
-    r = await call('POST', '/api/missions', { subject: 'mixed', durationSec: 120 }, tok); const gm = r.body.mission.missionId; const seenSubj = new Set();
-    for (let i = 0; i < 120; i++) { const sub = ['math', 'science', 'english', 'arabic'][i % 4]; r = await call('POST', '/api/missions/' + gm + '/next', { subject: sub }, tok); assert.strictEqual(r.body.question.gradeLevel, 10, 'served grade ' + r.body.question.gradeLevel); assert.strictEqual(r.body.question.subject, sub); seenSubj.add(r.body.question.subject); }
-    assert.strictEqual(seenSubj.size, 4); ok('120 questions across 4 chosen subjects — all from grade 10 only');
+    // one subject per mission, own grade only: 4 missions × 30 draws
+    for (const sub of ['math', 'science', 'english', 'arabic']) {
+      r = await call('POST', '/api/missions', { subject: sub, durationSec: 120 }, tok); const gm = r.body.mission.missionId;
+      for (let i = 0; i < 30; i++) { r = await call('POST', '/api/missions/' + gm + '/next', { subject: 'iq' }, tok); assert.strictEqual(r.body.question.gradeLevel, 10, 'served grade ' + r.body.question.gradeLevel); assert.strictEqual(r.body.question.subject, sub, 'subject switched mid-mission'); }
+    }
+    ok('120 questions in 4 single-subject missions — all from grade 10, subject never changes mid-mission');
+    r = await call('POST', '/api/missions', { subject: 'iq' }, tok); assert.strictEqual(r.status, 400); ok('school-grade student cannot open a learning-track subject (IQ)');
+    r = await call('POST', '/api/missions', { subject: 'mixed' }, tok); assert.strictEqual(r.status, 400); ok('unknown subject rejected');
+
+    // learning track (grade 0): IQ/English/Science/Math only, questions in the interface language only
+    r = await call('POST', '/api/auth/signup', { username: 'learner_1', password: 'secret12', gradeLevel: 0 }); assert.strictEqual(r.status, 200); assert.strictEqual(r.body.user.gradeLevel, 0); const lt = r.body.token;
+    r = await call('POST', '/api/missions', { subject: 'math' }, lt); assert.strictEqual(r.status, 400); ok('learning-track student cannot open school subjects');
+    for (const [sub, lang] of [['iq', 'en'], ['iq', 'ar'], ['lmath', 'en'], ['lscience', 'ar'], ['lenglish', 'en']]) {
+      r = await call('POST', '/api/missions', { subject: sub, durationSec: 120 }, lt); const lm = r.body.mission.missionId;
+      for (let i = 0; i < 15; i++) { r = await call('POST', '/api/missions/' + lm + '/next', { lang }, lt); const qq = r.body.question; assert.strictEqual(qq.gradeLevel, 0); assert.strictEqual(qq.subject, sub); assert.strictEqual(qq.ui, lang, sub + ' served ui ' + qq.ui + ' for lang ' + lang); }
+    }
+    ok('learning track: 75 questions across IQ/Math/Science/English — every one in the chosen language (ar/en)');
+
+    // mission by NUMBER of questions: exactly 5, then complete
+    r = await call('POST', '/api/missions', { subject: 'iq', mode: 'count', target: 5 }, lt); assert.strictEqual(r.body.mission.mode, 'count'); const cm = r.body.mission.missionId;
+    for (let i = 0; i < 5; i++) { r = await call('POST', '/api/missions/' + cm + '/next', { lang: 'en' }, lt); const qid = r.body.question.questionId; r = await call('POST', '/api/missions/' + cm + '/answer', { questionId: qid, selected: 0, ms: 9000 }, lt); assert.strictEqual(r.status, 200); }
+    r = await call('POST', '/api/missions/' + cm + '/next', { lang: 'en' }, lt); assert.strictEqual(r.status, 409); assert.strictEqual(r.body.error, 'mission_complete');
+    r = await call('POST', '/api/missions/' + cm + '/end', { survived: true }, lt); assert.strictEqual(r.body.survived, true); assert.strictEqual(r.body.summary.answered, 5);
+    ok('question-count mission: exactly 5 questions, then "complete" and counted as finished');
+
     r = await call('POST', '/api/missions/' + mid + '/next', { focus: 1, tabSwitches: 0 }, tok);
     let q = r.body.question; assert.ok(q && q.options.length === 4 && q.correctOptionIndex === undefined); assert.ok(r.body.predicted > 0 && r.body.predicted < 1);
     ok('adaptive next question (predicted P=' + r.body.predicted.toFixed(2) + ', concept ' + r.body.conceptAr + ')');
@@ -113,6 +134,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     assert.ok(r.body.provider.startsWith('openai')); assert.ok(r.body.text.includes('شرح تجريبي')); assert.ok(lastPrompt.includes('grade 10') && lastPrompt.includes('The student answered'));
     ok('AI tutor called the LLM with the curriculum prompt');
     r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: wrong }, tok); assert.strictEqual(r.body.cached, true); ok('tutor answer cached');
+    r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: wrong, lang: 'en' }, tok); assert.ok(/in English/.test(lastPrompt)); assert.ok(!r.body.cached); ok('tutor explains in English when the interface is English (separate cache entry)');
     mock.close(); process.env.OPENAI_BASE_URL = 'http://127.0.0.1:1';
     r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: (wrong + 1) % 4 === ci ? (wrong + 2) % 4 : (wrong + 1) % 4 }, tok);
     assert.strictEqual(r.body.provider, 'local'); assert.ok(r.body.text.includes('الإجابة الصحيحة')); ok('LLM down → offline curriculum explanation');
@@ -120,7 +142,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     r = await call('POST', '/api/missions/' + mid + '/end', { survived: true }, tok);
     assert.strictEqual(r.body.survived, false, 'instant finish is not "survived"'); assert.ok(r.body.badges.includes('first_mission')); ok('mission end: anti-farming survived check, badge first_mission');
 
-    r = await call('GET', '/api/leaderboard?scope=global', null, tok); assert.strictEqual(r.body.top[0].username, 'nour_7'); assert.strictEqual(r.body.me.rank, 1); ok('leaderboard + my rank');
+    r = await call('GET', '/api/leaderboard?scope=global', null, tok); const gi = r.body.top.findIndex(x => x.username === 'nour_7');
+    assert.ok(gi >= 0); assert.strictEqual(r.body.me.rank, gi + 1); for (let i = 1; i < r.body.top.length; i++) assert.ok(r.body.top[i - 1].totalXP >= r.body.top[i].totalXP);
+    r = await call('GET', '/api/leaderboard?scope=grade', null, tok); assert.ok(r.body.top.every(x => x.gradeLevel === 10)); ok('leaderboard sorted by XP + my rank; grade board only shows my grade');
     r = await call('GET', '/api/progress', null, tok); assert.ok(r.body.concepts.length >= 1); ok('progress: ' + r.body.concepts.length + ' concepts tracked');
 
     r = await call('POST', '/api/auth/signup', { username: 'ms_hoda', password: 'teacher1', role: 'teacher', gradeLevel: 10 }); const tt = r.body.token;

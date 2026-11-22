@@ -14,6 +14,7 @@ const math = require('./gen-math');
 const sci = require('./gen-science');
 const eng = require('./gen-english');
 const ara = require('./gen-arabic');
+const learn = require('./gen-learning');
 const { mcq } = require('./common');
 
 const ROOT = path.join(__dirname, '..');
@@ -46,18 +47,19 @@ function gradeFor(tag, d) {
 function push(subject, tag, raw) {
   if (!raw || !raw.m) { rejected++; return false; }
   const conceptTag = raw.tag || tag;
-  const key = subject + '|' + raw.q + '|' + raw.m.options.slice().sort().join('|');
-  const textKey = subject + '|' + raw.q;
+  const pool = subject + '|' + (raw.ui || '');
+  const key = pool + '|' + raw.q + '|' + raw.m.options.slice().sort().join('|');
+  const textKey = pool + '|' + raw.q;
   if (seenText.has(textKey) && seenText.has(key)) { rejected++; return false; }
-  if (seenText.has(textKey) && !/Choose|The (past|plural|meaning)|اختر|ما علامة|ما إعراب|أي الجمل|في أي جملة/.test(raw.q)) { rejected++; return false; }
+  if (seenText.has(textKey) && !raw.multi && !/Choose|The (past|plural|meaning)|اختر|ما علامة|ما إعراب|أي الجمل|في أي جملة/.test(raw.q)) { rejected++; return false; }
   if (seenText.has(key)) { rejected++; return false; }
   seenText.add(textKey); seenText.add(key);
   const d = raw.d || 2;
-  const grade = raw.g || gradeFor(conceptTag, d);
+  const grade = raw.g != null ? raw.g : gradeFor(conceptTag, d);
   const q = {
     questionId: '', gradeLevel: grade, subject, difficulty: d, difficultyLabel: DIFF_LABEL[d],
     questionText: raw.q, options: raw.m.options, correctOptionIndex: raw.m.correctOptionIndex,
-    conceptTag, explanation: raw.e, optionNotes: raw.m.optionNotes, lang: raw.lang || 'ar', source: 'gen:' + subject + '.' + tag
+    conceptTag, explanation: raw.e, optionNotes: raw.m.optionNotes, lang: raw.lang || raw.ui || 'ar', ui: raw.ui || null, source: 'gen:' + subject + '.' + tag
   };
   all.push(q);
   stats[subject] = (stats[subject] || 0) + 1;
@@ -77,11 +79,20 @@ for (const c of sci.curated()) {
 // curated Arabic roles (each sentence twice with different option sets is not useful → once)
 for (const it of ara.rolesCurated()) push('arabic', 'nahw_roles', Object.assign(ara.roleQuestion(rng, it), { tag: 'nahw_roles' }));
 
+// learning track (grade 0), generated separately for Arabic and English
+for (const ui of ['ar', 'en']) {
+  for (const [subject, tag, fn, target] of learn.plan) {
+    const want = Math.round(target * scale);
+    let made = 0, tries = 0;
+    while (made < want && tries < want * 12) { tries++; let raw = null; try { raw = fn(rng, ui); } catch (e) { raw = null; } if (raw) { raw.ui = ui; raw.g = 0; } if (push(subject, tag, raw)) made++; }
+  }
+}
+
 // ids
 const counters = {};
 all.forEach(q => {
-  const k = q.subject + q.gradeLevel; counters[k] = (counters[k] || 0) + 1;
-  q.questionId = q.subject.slice(0, 3).toUpperCase() + '-' + q.gradeLevel + '-' + String(counters[k]).padStart(5, '0');
+  const k = q.subject + q.gradeLevel + (q.ui || ''); counters[k] = (counters[k] || 0) + 1;
+  q.questionId = q.subject.slice(0, 3).toUpperCase() + '-' + q.gradeLevel + (q.ui ? '-' + q.ui.toUpperCase() : '') + '-' + String(counters[k]).padStart(5, '0');
 });
 
 // ---- write outputs ----
@@ -94,7 +105,7 @@ const index = { generated: new Date().toISOString().slice(0, 10), total: all.len
 const groups = {};
 all.forEach(q => {
   const k = q.subject + '-g' + q.gradeLevel;
-  (groups[k] = groups[k] || []).push([q.questionId, q.gradeLevel, q.difficulty, q.conceptTag, q.questionText, q.options, q.correctOptionIndex, q.explanation, q.optionNotes, q.lang]);
+  (groups[k] = groups[k] || []).push([q.questionId, q.gradeLevel, q.difficulty, q.conceptTag, q.questionText, q.options, q.correctOptionIndex, q.explanation, q.optionNotes, q.lang, q.ui]);
   index.bySubject[q.subject] = (index.bySubject[q.subject] || 0) + 1;
   index.byGrade[q.gradeLevel] = (index.byGrade[q.gradeLevel] || 0) + 1;
   index.byConcept[q.conceptTag] = (index.byConcept[q.conceptTag] || 0) + 1;

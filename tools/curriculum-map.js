@@ -14,7 +14,7 @@ bank.forEach(q => { const k = q.conceptTag + '|' + q.gradeLevel; cnt[k] = (cnt[k
 let md = '# خريطة المنهج — أي مفهوم يُدرَّس في أي صف\n\n' +
   '> هذه الخريطة **من وضع المطوّر** وليست منقولة حرفياً من الكتب المدرسية الرسمية. **يرجى مراجعتها مع معلم المادة**، ثم تعديل الصفوف في `js/shared/concepts.js` (الرقمان بعد اسم المادة هما أول صف وآخر صف) وتشغيل `npm run build`.\n' +
   '> يعرض النظام لكل طالب أسئلة **صفه فقط**.\n\n';
-Object.keys(C.SUBJECTS).forEach(s => {
+C.CURRICULUM.forEach(s => {
   md += '## ' + C.SUBJECTS[s].icon + ' ' + C.SUBJECTS[s].ar + '\n\n| المفهوم | الصفوف | ' + C.GRADES.map(g => 'ص' + g).join(' | ') + ' |\n|---|---|' + C.GRADES.map(() => '---').join('|') + '|\n';
   C.forSubject(s).forEach(t => {
     const c = C.ALL[t], row = C.GRADES.map(g => cnt[t + '|' + g] || '·');

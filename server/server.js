@@ -37,12 +37,13 @@ function loadQuestions() {
   }
 }
 loadQuestions();
-function poolFor(subject, grade) {
-  const subs = subject === 'mixed' ? Object.keys(Concepts.SUBJECTS) : [subject];
-  let out = [];
-  for (const s of subs) out = out.concat(POOLS[s + '|' + grade] || []);   // ONLY the student's own grade
-  return out;
+/* ONLY the student's own grade. Learning track (grade 0): only the student's interface language. */
+function poolFor(subject, grade, ui) {
+  const all = POOLS[subject + '|' + grade] || [];
+  return +grade === 0 ? all.filter(q => q.ui === (ui === 'en' ? 'en' : 'ar')) : all;
 }
+function cleanSubject(s, grade) { if (!Concepts.subjectsFor(grade).includes(s)) throw new HttpError(400, 'bad_subject'); return s; }
+const cleanLang = l => (l === 'en' ? 'en' : 'ar');
 
 /* ---------- users ---------- */
 const getUserRow = db.prepare('SELECT * FROM users WHERE uid = ?');
@@ -111,7 +112,8 @@ function cleanUsername(s) {
   if (!/^[\p{L}\p{N}_.\-]{3,20}$/u.test(s)) throw new HttpError(400, 'bad_username');
   return s;
 }
-function cleanGrade(g) { g = parseInt(g, 10); if (!(g >= 7 && g <= 12)) throw new HttpError(400, 'bad_grade'); return g; }
+function cleanGrade(g) { g = parseInt(g, 10); if (!(g === 0 || (g >= 7 && g <= 12))) throw new HttpError(400, 'bad_grade'); return g; }   // 0 = learning track
+const hasGrade = g => g !== undefined && g !== null && g !== '';
 const AVATARS = ['🧑‍🚀', '👩‍🚀', '👨‍🚀', '🤖', '👽', '🦊', '🐼', '🦉', '🐉', '🛸', '🌟', '🪐'];
 function newUid() { return crypto.randomUUID(); }
 
@@ -136,7 +138,7 @@ route('POST', '/api/auth/signup', async (req) => {
   if (db.prepare('SELECT 1 FROM users WHERE username = ?').get(username)) throw new HttpError(409, 'username_taken');
   let classCode = String(b.classCode || '').trim().toUpperCase();
   if (classCode && !db.prepare('SELECT 1 FROM classes WHERE code = ?').get(classCode)) throw new HttpError(400, 'bad_class_code');
-  const u = Service.newUser({ uid: newUid(), username, displayName: String(b.displayName || username).slice(0, 30), role, gradeLevel: cleanGrade(b.gradeLevel || 9),
+  const u = Service.newUser({ uid: newUid(), username, displayName: String(b.displayName || username).slice(0, 30), role, gradeLevel: cleanGrade(hasGrade(b.gradeLevel) ? b.gradeLevel : 9),
     avatar: AVATARS.includes(b.avatar) ? b.avatar : AVATARS[Math.floor(Math.random() * 4)], classCode, now: Date.now() });
   const { hash, salt } = auth.hashPassword(b.password);
   insertUser(u, { passHash: hash, salt });
@@ -150,7 +152,7 @@ route('POST', '/api/auth/login', async (req) => {
   const r = db.prepare('SELECT uid, passHash, salt FROM users WHERE username = ?').get(String(b.username || '').trim());
   if (!r || !auth.checkPassword(b.password || '', r.passHash, r.salt)) throw new HttpError(401, 'bad_credentials');
   const u = loadUser(r.uid);
-  if (b.gradeLevel && u.role === 'student') { u.gradeLevel = cleanGrade(b.gradeLevel); saveUser(u); }
+  if (hasGrade(b.gradeLevel) && u.role === 'student') { u.gradeLevel = cleanGrade(b.gradeLevel); saveUser(u); }
   return { token: auth.issueToken(u.uid), user: Service.publicUser(u) };
 });
 
@@ -164,19 +166,19 @@ route('POST', '/api/auth/google', async (req) => {
     let base = b.username ? cleanUsername(b.username) : 'pilot' + crypto.randomInt(1000, 9999);
     let name = base, i = 1;
     while (db.prepare('SELECT 1 FROM users WHERE username = ?').get(name)) name = base + '_' + (++i);
-    const u = Service.newUser({ uid: newUid(), username: name, displayName: name, gradeLevel: cleanGrade(b.gradeLevel || 9), avatar: AVATARS[0], now: Date.now() });
+    const u = Service.newUser({ uid: newUid(), username: name, displayName: name, gradeLevel: cleanGrade(hasGrade(b.gradeLevel) ? b.gradeLevel : 9), avatar: AVATARS[0], now: Date.now() });
     insertUser(u, { googleSub: g.sub, email: g.email });
     r = { uid: u.uid };
   }
   const u = loadUser(r.uid);
-  if (b.gradeLevel && u.role === 'student') { u.gradeLevel = cleanGrade(b.gradeLevel); saveUser(u); }
+  if (hasGrade(b.gradeLevel) && u.role === 'student') { u.gradeLevel = cleanGrade(b.gradeLevel); saveUser(u); }
   return { token: auth.issueToken(u.uid), user: Service.publicUser(u) };
 });
 
 route('GET', '/api/me', (req) => ({ user: Service.publicUser(requireUser(req)) }));
 route('PATCH', '/api/me', async (req) => {
   const u = requireUser(req), b = await readBody(req);
-  if (b.gradeLevel != null) u.gradeLevel = cleanGrade(b.gradeLevel);
+  if (hasGrade(b.gradeLevel)) u.gradeLevel = cleanGrade(b.gradeLevel);
   if (b.avatar && AVATARS.includes(b.avatar)) u.avatar = b.avatar;
   if (b.displayName) u.displayName = String(b.displayName).trim().slice(0, 30) || u.displayName;
   if (b.classCode != null) {
@@ -191,31 +193,33 @@ route('PATCH', '/api/me', async (req) => {
    Students never receive the answer key; teachers do. */
 route('GET', '/api/questions', (req, url) => {
   const u = requireUser(req);
-  const subject = url.searchParams.get('subject') || 'math', grade = cleanGrade(url.searchParams.get('grade') || u.gradeLevel);
+  const grade = cleanGrade(hasGrade(url.searchParams.get('grade')) ? url.searchParams.get('grade') : u.gradeLevel);
+  const subject = cleanSubject(url.searchParams.get('subject') || Concepts.subjectsFor(grade)[0], grade), ui = cleanLang(url.searchParams.get('lang'));
   const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '10', 10)));
   const diff = parseInt(url.searchParams.get('difficulty') || '0', 10);
-  const rows = db.prepare('SELECT * FROM questions WHERE active=1 AND subject=? AND gradeLevel=? AND (?=0 OR difficulty=?) ORDER BY random() LIMIT ?').all(subject, grade, diff, diff, limit).map(rowToQuestion);
+  const rows = db.prepare('SELECT * FROM questions WHERE active=1 AND subject=? AND gradeLevel=? AND (?=0 OR ui=?) AND (?=0 OR difficulty=?) ORDER BY random() LIMIT ?')
+    .all(subject, grade, grade === 0 ? 1 : 0, ui, diff, diff, limit).map(rowToQuestion);
   return { questions: rows.map(q => u.role === 'teacher' ? q : Service.publicQuestion(q)) };
 });
 
 route('POST', '/api/missions', async (req) => {
   const u = requireUser(req), b = await readBody(req);
-  const subject = ['math', 'science', 'english', 'arabic', 'mixed'].includes(b.subject) ? b.subject : 'mixed';
-  const m = Service.startMission(u, { missionId: crypto.randomUUID(), subject, durationSec: parseInt(b.durationSec, 10) || 300 }, Date.now());
+  const subject = cleanSubject(b.subject, u.gradeLevel);   // the subject is chosen ONCE per mission
+  const m = Service.startMission(u, { missionId: crypto.randomUUID(), subject, mode: b.mode, target: b.target, durationSec: parseInt(b.durationSec, 10) || 300 }, Date.now());
   saveMission(m); saveUser(u);
-  return { mission: { missionId: m.missionId, subject: m.subject, durationSec: m.durationSec, startedAt: m.startedAt } };
+  return { mission: { missionId: m.missionId, subject: m.subject, mode: m.mode, target: m.target, durationSec: m.durationSec, startedAt: m.startedAt } };
 });
 
 route('POST', '/api/missions/:id/next', async (req, url, p) => {
   const u = requireUser(req), b = await readBody(req);
   const m = loadMission(p.id, u.uid); if (!m || m.endedAt) throw new HttpError(404, 'mission_not_found');
-  const subj = b.subject && ['math', 'science', 'english', 'arabic'].includes(b.subject) && (m.subject === 'mixed' || m.subject === b.subject) ? b.subject : m.subject;
-  const pool = poolFor(subj, u.gradeLevel);
+  if (m.mode === 'count' && m.answered >= m.target) throw new HttpError(409, 'mission_complete');
+  const pool = poolFor(m.subject, u.gradeLevel, cleanLang(b.lang));
   const r = Service.nextQuestion(u, m, pool, { focus: b.focus == null ? null : Number(b.focus), tabSwitches: Number(b.tabSwitches) || 0, sinceBreakMin: b.sinceBreakMin == null ? null : Number(b.sinceBreakMin) }, Model, Date.now());
   if (!r) throw new HttpError(404, 'no_questions');
   saveMission(m);
   return { question: Service.publicQuestion(r.q), predicted: r.predicted, risk: r.risk, riskThreshold: Model ? Model.disengage.threshold : 0.45, mastery: r.mastery, elo: r.elo,
-    conceptAr: (Concepts.ALL[r.q.conceptTag] || {}).ar, expectedSec: Rules.expectedSeconds(r.q) };
+    conceptAr: Concepts.name(r.q.conceptTag, 'ar'), conceptEn: Concepts.name(r.q.conceptTag, 'en'), expectedSec: Rules.expectedSeconds(r.q) };
 });
 
 const insAnswer = db.prepare('INSERT INTO answers (uid, missionId, questionId, conceptTag, subject, selected, correct, rapid, ms, hidden, xp, pBefore, masteryAfter, focus, ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
@@ -269,13 +273,13 @@ route('POST', '/api/tutor', async (req) => {
   const q = Q.get(String(b.questionId)); if (!q) throw new HttpError(404, 'question_not_found');
   const sel = parseInt(b.selected, 10);
   if (sel !== -1 && !(sel >= 0 && sel < 4)) throw new HttpError(400, 'bad_selection');
-  const local = TutorLocal.explain(q, sel, u.gradeLevel);
+  const lang = cleanLang(b.lang), local = TutorLocal.explain(q, sel, u.gradeLevel, lang);
   if (!tutor.provider()) return { text: local, provider: 'local', source: 'curriculum' };
-  const key = q.questionId + ':' + sel + ':' + u.gradeLevel;
+  const key = q.questionId + ':' + sel + ':' + u.gradeLevel + ':' + lang;
   const hit = tutorGet.get(key); if (hit) return { text: hit.text, provider: hit.provider, cached: true, fallback: local };
   try { rateLimit('tutor:' + u.uid, 20); } catch (e) { return { text: local, provider: 'local', source: 'rate_limited' }; }
   try {
-    const r = await tutor.callLLM(TutorLocal.prompt(q, sel, u.gradeLevel), 300);
+    const r = await tutor.callLLM(TutorLocal.prompt(q, sel, u.gradeLevel, lang), 300);
     if (!r.text) throw new Error('empty');
     tutorPut.run(key, r.text, r.provider, Date.now());
     return { text: r.text, provider: r.provider, fallback: local };
@@ -288,10 +292,11 @@ route('POST', '/api/tutor/ask', async (req) => {
   // the SERVER decides whether the question is still unanswered (a client cannot claim otherwise)
   const m = b.missionId ? loadMission(String(b.missionId), u.uid) : null;
   const before = !!(m && !m.endedAt && m.served && m.served.id === q.questionId);
-  if (!tutor.provider()) return { text: TutorLocal.askLocal(q, u.gradeLevel, before), provider: 'local', before };
+  const lang = cleanLang(b.lang);
+  if (!tutor.provider()) return { text: TutorLocal.askLocal(q, u.gradeLevel, before, lang), provider: 'local', before };
   rateLimit('ask:' + u.uid, 12);
-  try { const r = await tutor.callLLM(TutorLocal.followupPrompt(q, u.gradeLevel, msg, before), 350); return { text: r.text, provider: r.provider, before }; }
-  catch (e) { return { text: TutorLocal.askLocal(q, u.gradeLevel, before), provider: 'local', before, source: 'llm_error' }; }
+  try { const r = await tutor.callLLM(TutorLocal.followupPrompt(q, u.gradeLevel, msg, before, lang), 350); return { text: r.text, provider: r.provider, before }; }
+  catch (e) { log('tutor fallback: ' + e.message); return { text: TutorLocal.askLocal(q, u.gradeLevel, before, lang), provider: 'local', before, source: 'llm_error' }; }
 });
 
 /* Leaderboards */

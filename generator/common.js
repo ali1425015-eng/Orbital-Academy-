@@ -56,7 +56,7 @@ function mcq(rng, correct, ds, fmt, opts) {
     if (v === null || v === undefined || (typeof v === 'number' && !isFinite(v))) continue;
     const s = fmt(v);
     if (seen.has(s)) continue;
-    seen.add(s); out.push({ t: s, note: note || FILLER_NOTE, ok: false });
+    seen.add(s); out.push({ t: s, note: note || opts.filler || FILLER_NOTE, ok: false });
     if (out.length === 4) break;
   }
   let guard = 0;
@@ -64,7 +64,7 @@ function mcq(rng, correct, ds, fmt, opts) {
     const v = opts.near(rng);
     const s = fmt(v);
     if (seen.has(s)) continue;
-    seen.add(s); out.push({ t: s, note: FILLER_NOTE, ok: false });
+    seen.add(s); out.push({ t: s, note: opts.filler || FILLER_NOTE, ok: false });
   }
   if (out.length < 4) return null;
   const sh = rng.shuffle(out);

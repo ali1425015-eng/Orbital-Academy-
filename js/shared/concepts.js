@@ -6,12 +6,17 @@
   else (root.OA = root.OA || {}).Concepts = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   var SUBJECTS = {
-    math:    { ar: 'الرياضيات', en: 'Math',     icon: '🧮', system: 'power',  systemAr: 'مفاعل الطاقة' },
-    science: { ar: 'العلوم والفيزياء', en: 'Science', icon: '⚛️', system: 'shield', systemAr: 'الدرع الواقي' },
-    english: { ar: 'اللغة الإنجليزية', en: 'English',  icon: '🔤', system: 'comms',  systemAr: 'الاتصالات' },
-    arabic:  { ar: 'النحو العربي', en: 'Arabic Grammar', icon: '📜', system: 'oxygen', systemAr: 'إعادة تدوير الأكسجين' }
+    iq:       { ar: 'الذكاء والمنطق', en: 'IQ & Logic', icon: '🧩', track: 'learning' },
+    lenglish: { ar: 'اللغة الإنجليزية', en: 'English', icon: '💬', track: 'learning' },
+    lscience: { ar: 'العلوم', en: 'Science', icon: '🔬', track: 'learning' },
+    lmath:    { ar: 'الرياضيات', en: 'Math', icon: '➗', track: 'learning' },
+    math:    { track: 'curriculum', ar: 'الرياضيات', en: 'Math',     icon: '🧮', system: 'power',  systemAr: 'مفاعل الطاقة' },
+    science: { track: 'curriculum', ar: 'العلوم والفيزياء', en: 'Science', icon: '⚛️', system: 'shield', systemAr: 'الدرع الواقي' },
+    english: { track: 'curriculum', ar: 'اللغة الإنجليزية', en: 'English',  icon: '🔤', system: 'comms',  systemAr: 'الاتصالات' },
+    arabic:  { track: 'curriculum', ar: 'النحو العربي', en: 'Arabic Grammar', icon: '📜', system: 'oxygen', systemAr: 'إعادة تدوير الأكسجين' }
   };
 
+  var GRADE_AR = { 0: 'تعلّم حر (خارج المنهج)', 7: 'الصف الأول الإعدادي', 8: 'الصف الثاني الإعدادي', 9: 'الصف الثالث الإعدادي', 10: 'الصف الأول الثانوي', 11: 'الصف الثاني الثانوي', 12: 'الصف الثالث الثانوي' };
   var C = {};
   function add(tag, subject, g0, g1, ar, lesson) { C[tag] = { tag: tag, subject: subject, grades: [g0, g1], ar: ar, lesson: lesson }; }
 
@@ -104,7 +109,65 @@
   add('nida', 'arabic', 11, 12, 'النداء', 'المنادى المفرد العلم أو النكرة المقصودة يُبنى على الضم (يا محمدُ). والمنادى المضاف منصوب (يا طالبَ العلمِ).');
   add('mamnu3', 'arabic', 11, 12, 'الممنوع من الصرف', 'الممنوع من الصرف (مثل أحمد، فاطمة، مساجد، صحراء) لا يُنوَّن، ويُجر بالفتحة نيابة عن الكسرة، إلا إذا دخلت عليه (ال) أو أُضيف فيُجر بالكسرة.');
 
+  // ---------- Learning track (outside the school curriculum, Arabic + English) ----------
+  function addL(tag, subject, ar, en, lesson, lessonEn) { C[tag] = { tag: tag, subject: subject, grades: [0, 0], ar: ar, en: en, lesson: lesson, lessonEn: lessonEn }; }
+  addL('iq_numseq', 'iq', 'المتتابعات العددية', 'Number sequences', 'ابحث عن القاعدة: فرق ثابت، أو ضرب في عدد ثابت، أو فروق تزيد، أو نمطان متبادلان.', 'Find the rule: a constant difference, a constant multiplier, growing differences, or two alternating patterns.');
+  addL('iq_letters', 'iq', 'أنماط الحروف', 'Letter patterns', 'رتّب الحروف حسب موقعها في الأبجدية واحسب كم حرفاً نقفز كل مرة.', 'Turn letters into their alphabet positions and find how many letters are skipped each time.');
+  addL('iq_oddone', 'iq', 'الشاذ في المجموعة', 'Odd one out', 'ابحث عن الصفة المشتركة بين ثلاثة عناصر؛ العنصر الذي لا يملكها هو الشاذ.', 'Find what three items share; the item without that property is the odd one out.');
+  addL('iq_analogy', 'iq', 'التناظر', 'Analogies', 'حدد العلاقة بين الكلمتين الأوليين ثم طبّق العلاقة نفسها على الزوج الثاني.', 'Name the relationship between the first pair, then apply the same relationship to the second pair.');
+  addL('iq_logic', 'iq', 'ألغاز منطقية', 'Logic puzzles', 'اقرأ اللغز ببطء، وترجم كل جملة إلى معادلة أو حقيقة بسيطة قبل الحساب.', 'Read slowly and turn each sentence into a simple fact or equation before calculating.');
+  addL('iq_calendar', 'iq', 'الأيام والتواريخ', 'Days & dates', 'الأسبوع 7 أيام: باقي القسمة على 7 يحدد اليوم.', 'A week has 7 days: the remainder when dividing by 7 tells you the day.');
+  addL('lm_mental', 'lmath', 'الحساب الذهني', 'Mental arithmetic', 'قسّم العدد إلى عشرات وآحاد واحسب كل جزء ثم اجمع.', 'Split numbers into tens and ones, work each part, then combine.');
+  addL('lm_order', 'lmath', 'ترتيب العمليات', 'Order of operations', 'الأقواس أولاً، ثم الضرب والقسمة، ثم الجمع والطرح.', 'Brackets first, then multiplication and division, then addition and subtraction.');
+  addL('lm_percent', 'lmath', 'النسب المئوية في الحياة', 'Percentages in real life', 'الخصم p% يعني دفع (100 − p)% من السعر.', 'A p% discount means paying (100 − p)% of the price.');
+  addL('lm_fraction', 'lmath', 'الكسور والأعداد العشرية', 'Fractions & decimals', 'حوّل كل الأعداد لصيغة واحدة (عشرية مثلاً) قبل المقارنة.', 'Convert everything to one form (e.g. decimals) before comparing.');
+  addL('lm_ratio', 'lmath', 'النسبة وأفضل سعر', 'Ratios & best buy', 'قارن سعر القطعة الواحدة: السعر ÷ عدد القطع.', 'Compare the price of one item: price ÷ number of items.');
+  addL('lm_equation', 'lmath', 'المعادلات البسيطة', 'Simple equations', 'افعل العملية العكسية على الطرفين حتى يبقى x وحده.', 'Do the inverse operation on both sides until x is alone.');
+  addL('lm_average', 'lmath', 'المتوسط', 'Averages', 'المتوسط = مجموع القيم ÷ عددها.', 'Mean = sum of the values ÷ how many values.');
+  addL('lm_geometry', 'lmath', 'المساحة والمحيط', 'Area & perimeter', 'مساحة المستطيل = الطول × العرض، ومحيطه = 2 × (الطول + العرض).', 'Rectangle area = length × width; perimeter = 2 × (length + width).');
+  addL('lm_speed', 'lmath', 'السرعة والمسافة والزمن', 'Speed, distance & time', 'المسافة = السرعة × الزمن.', 'Distance = speed × time.');
+  addL('lm_powers', 'lmath', 'القوى والجذور', 'Powers & roots', 'aⁿ تعني ضرب a في نفسه n مرة، والجذر التربيعي هو العدد الذي مربعه يساوي الرقم.', 'aⁿ means a multiplied by itself n times; a square root is the number whose square gives the value.');
+  addL('lm_probability', 'lmath', 'الاحتمالات', 'Chance & probability', 'الاحتمال = عدد النتائج المطلوبة ÷ عدد كل النتائج الممكنة.', 'Probability = favourable outcomes ÷ all possible outcomes.');
+  addL('ls_life', 'lscience', 'علوم الحياة', 'Life science', 'الكائنات الحية تتكون من خلايا، والنبات يصنع غذاءه بالبناء الضوئي.', 'Living things are made of cells; plants make food by photosynthesis.');
+  addL('ls_chem', 'lscience', 'الكيمياء', 'Chemistry', 'المادة تتكون من ذرات، والعناصر لها رموز ثابتة في الجدول الدوري.', 'Matter is made of atoms; each element has a fixed symbol in the periodic table.');
+  addL('ls_phys', 'lscience', 'الفيزياء', 'Physics', 'القوة تغيّر حركة الأجسام، والطاقة لا تفنى ولا تُستحدث بل تتحول.', 'Forces change motion; energy is never created or destroyed, only converted.');
+  addL('ls_space', 'lscience', 'الأرض والفضاء', 'Earth & space', 'الأرض تدور حول نفسها (ليل ونهار) وحول الشمس (سنة).', 'Earth spins on its axis (day and night) and orbits the Sun (a year).');
+  addL('ls_body', 'lscience', 'جسم الإنسان', 'Human body', 'لكل جهاز في الجسم وظيفة: الدوري ينقل الدم، والتنفسي يأخذ الأكسجين.', 'Each body system has a job: circulatory moves blood, respiratory takes in oxygen.');
+  addL('ls_formula', 'lscience', 'حسابات علمية', 'Science calculations', 'اكتب القانون أولاً، ثم عوّض بالأرقام بوحداتها.', 'Write the formula first, then substitute the numbers with their units.');
+  addL('ls_units', 'lscience', 'الوحدات والتحويلات', 'Units & conversions', '°F = °C × 9/5 + 32 ، K = °C + 273 ، 1 km = 1000 m.', '°F = °C × 9/5 + 32, K = °C + 273, 1 km = 1000 m.');
+  addL('le_tenses', 'lenglish', 'الأزمنة', 'Verb tenses', 'الكلمة الدالة على الزمن (every day, yesterday, now, tomorrow) تحدد الزمن.', 'The time word (every day, yesterday, now, tomorrow) tells you which tense to use.');
+  addL('le_irregular', 'lenglish', 'الأفعال الشاذة', 'Irregular verbs', 'الأفعال الشاذة لا تأخذ ed — احفظ تصريفاتها الثلاثة.', 'Irregular verbs do not take -ed; learn their three forms.');
+  addL('le_comparatives', 'lenglish', 'المقارنة والتفضيل', 'Comparatives & superlatives', 'الصفات القصيرة: -er / the -est، والطويلة: more / the most.', 'Short adjectives: -er / the -est; long ones: more / the most.');
+  addL('le_vocab', 'lenglish', 'المفردات', 'Vocabulary', 'المرادف له نفس المعنى، والمضاد له المعنى العكسي.', 'A synonym means the same; an antonym means the opposite.');
+  addL('le_articles', 'lenglish', 'أدوات النكرة a / an', 'Articles a / an', 'نستخدم an قبل الصوت المتحرك (an apple, an hour) و a قبل الصوت الساكن (a car, a university).', 'Use "an" before a vowel SOUND (an apple, an hour) and "a" before a consonant sound (a car, a university).');
+  addL('le_plurals', 'lenglish', 'الجمع', 'Plural nouns', 'معظم الأسماء + s ، و es بعد s/sh/ch/x ، وهناك جموع شاذة (child → children).', 'Most nouns add -s; add -es after s/sh/ch/x; some are irregular (child → children).');
+  addL('le_prepositions', 'lenglish', 'حروف الجر للزمن', 'Prepositions of time', 'in للشهور والسنين، on للأيام والتواريخ، at للساعات.', 'in for months and years, on for days and dates, at for clock times.');
+
+  // English names for the school-curriculum concepts (UI in English)
+  var EN = { int_ops: 'Integer operations', frac_add: 'Adding fractions', frac_mul: 'Multiplying fractions', percent: 'Percentages', ratio: 'Ratio & proportion', lin_eq: 'Linear equations',
+    exponents: 'Laws of exponents', sqrt_simplify: 'Simplifying roots', pythagoras: 'Pythagoras', expand_square: 'Square of a binomial', circle_area: 'Area of a circle', linear_func: 'Linear functions',
+    lin_ineq: 'Inequalities', systems: 'Simultaneous equations', quad_factor: 'Factorising quadratics', slope: 'Slope of a line', mean_median: 'Mean & median', probability: 'Probability',
+    trig_special: 'Special angles', discriminant: 'Discriminant', func_eval: 'Evaluating functions', distance: 'Distance between points', vectors: 'Vector magnitude', arith_seq: 'Arithmetic sequences',
+    geo_seq: 'Geometric sequences', logs: 'Logarithms', limits: 'Limits', derivative: 'Derivatives', integral: 'Definite integrals', speed: 'Speed', density: 'Density', weight: 'Weight & gravity',
+    pressure: 'Pressure', heat: 'Heat energy', newton2: "Newton's second law", work_power: 'Work & power', ohm: "Ohm's law", kinetic: 'Kinetic energy', potential: 'Potential energy',
+    momentum: 'Momentum', waves: 'Waves', hooke: "Hooke's law", free_fall: 'Free fall', resistors: 'Resistors', elec_power: 'Electric power', magnetic_force: 'Magnetic force on a wire',
+    coulomb: "Coulomb's law", capacitor: 'Capacitors', faraday: "Faraday's law", space_science: 'Space science', gen_science: 'General science', present_simple: 'Present simple',
+    past_simple: 'Past simple', present_cont: 'Present continuous', future_will: 'Future with will', present_perfect: 'Present perfect', past_cont: 'Past continuous', passive: 'Passive voice',
+    conditionals: 'Conditionals', irregular_verbs: 'Irregular verbs', comparatives: 'Comparatives', plurals: 'Plurals', relative_clauses: 'Relative clauses', modals: 'Modal verbs',
+    reported_speech: 'Reported speech', gerund_inf: 'Gerund or infinitive', vocab_syn: 'Synonyms', vocab_ant: 'Antonyms', jam_mudhakkar: 'Sound masculine plural', muthanna: 'The dual',
+    asmaa_khamsa: 'The five nouns', kana: 'Kana and its sisters', inna: 'Inna and its sisters', af3al_khamsa: 'The five verbs', jazm: 'Jussive mood', nasb_mudari3: 'Subjunctive mood',
+    nahw_roles: 'Syntactic roles', istithna: 'Exception (istithnaa)', nida: 'Vocative (nidaa)', mamnu3: 'Diptotes (mamnu3 min al-sarf)' };
+  Object.keys(EN).forEach(function (k) { if (C[k]) C[k].en = EN[k]; });
+
+  var CURRICULUM = ['math', 'science', 'english', 'arabic'], LEARNING = ['iq', 'lenglish', 'lscience', 'lmath'];
+  function subjectsFor(grade) { return +grade === 0 ? LEARNING : CURRICULUM; }
+  function name(tag, lang) { var c = C[tag]; return c ? (lang === 'en' ? (c.en || c.ar) : c.ar) : tag; }
+  function lesson(tag, lang) { var c = C[tag]; return c ? (lang === 'en' ? (c.lessonEn || c.lesson) : c.lesson) : ''; }
+  function subjectName(s, lang) { var x = SUBJECTS[s]; return x ? x[lang === 'en' ? 'en' : 'ar'] : s; }
+  var gradeEn = { 0: 'Learning (outside the curriculum)', 7: 'Grade 7 (Prep 1)', 8: 'Grade 8 (Prep 2)', 9: 'Grade 9 (Prep 3)', 10: 'Grade 10 (Sec 1)', 11: 'Grade 11 (Sec 2)', 12: 'Grade 12 (Sec 3)' };
+  function gradeName(g, lang) { return lang === 'en' ? gradeEn[g] : GRADE_AR[g]; }
+
   function forSubject(s) { return Object.keys(C).filter(function (k) { return C[k].subject === s; }); }
-  return { SUBJECTS: SUBJECTS, ALL: C, forSubject: forSubject, GRADES: [7, 8, 9, 10, 11, 12],
-    gradeAr: { 7: 'الصف الأول الإعدادي', 8: 'الصف الثاني الإعدادي', 9: 'الصف الثالث الإعدادي', 10: 'الصف الأول الثانوي', 11: 'الصف الثاني الثانوي', 12: 'الصف الثالث الثانوي' } };
+  return { SUBJECTS: SUBJECTS, ALL: C, forSubject: forSubject, GRADES: [7, 8, 9, 10, 11, 12], LEARNING_GRADE: 0, CURRICULUM: CURRICULUM, LEARNING: LEARNING,
+    subjectsFor: subjectsFor, name: name, lesson: lesson, subjectName: subjectName, gradeName: gradeName, gradeEn: gradeEn, gradeAr: GRADE_AR };
 });
