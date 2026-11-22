@@ -26,6 +26,18 @@ const OPENAI_STYLE = {
   openai:     { key: 'OPENAI_API_KEY',     base: null,                                 model: ['OPENAI_MODEL', 'gpt-4o-mini'] },
   custom:     { key: 'AI_API_KEY',         base: null,                                 model: ['AI_MODEL', 'default'] }
 };
+const MODEL_OVERRIDE = {};
+/* Lists the provider's models and picks a sensible chat model (big instruct models first; no audio/guard/embedding models). */
+async function discoverModel(p, url, key, failed) {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(8000), headers: { authorization: 'Bearer ' + key } });
+    if (!r.ok) return null;
+    const ids = ((await r.json()).data || []).map(m => m.id).filter(id => id && id !== failed && !/whisper|guard|tts|embed|moderation|vision-preview|orpheus|playai|transcribe|safeguard/i.test(id));
+    const pref = [/llama-3\.3-70b/i, /gpt-oss-120b/i, /llama-3\.1-70b/i, /llama.*70b/i, /gpt-oss-20b/i, /llama-3\.1-8b-instant/i, /llama.*(8b|instant)/i, /qwen/i];
+    for (const re of pref) { const hit = ids.find(id => re.test(id)); if (hit) { console.error('[ai] ' + p + ': "' + failed + '" is gone → using "' + hit + '"'); return hit; } }
+    return ids[0] || null;
+  } catch (e) { return null; }
+}
 const ORDER = ['groq', 'cerebras', 'openrouter', 'gemini', 'mistral', 'custom', 'openai', 'anthropic'];   // free first
 
 function configured() {
@@ -43,7 +55,7 @@ function provider() { return configured()[0] || null; }
 function modelName(p) {
   if (p === 'gemini') return env('GEMINI_MODEL') || 'gemini-2.5-flash';
   if (p === 'anthropic') return env('ANTHROPIC_MODEL') || 'claude-haiku-5-5';
-  const m = OPENAI_STYLE[p].model; return env(m[0]) || m[1];
+  const m = OPENAI_STYLE[p].model; return env(m[0]) || MODEL_OVERRIDE[p] || m[1];
 }
 
 function geminiConfig(model, maxTokens) {
@@ -83,7 +95,14 @@ async function callOne(p, prompt, maxTokens) {
   const url = /\/chat\/completions$/.test(base) ? base : (/\/v\d+$/.test(base) ? base : base + '/v1') + '/chat/completions';
   const r = await fetch(url, { method: 'POST', signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env(c.key) },
     body: JSON.stringify({ model, max_tokens: maxTokens, temperature: 0.4, messages: [{ role: 'user', content: prompt }] }) });
-  if (!r.ok) throw await httpError(p, r);
+  if (!r.ok) {
+    // the default model was retired/renamed by the provider → ask the provider which chat models it has now and retry once
+    if ((r.status === 404 || r.status === 400) && !env(c.model[0])) {
+      const alt = await discoverModel(p, url.replace(/\/chat\/completions$/, '/models'), env(c.key), model);
+      if (alt) { MODEL_OVERRIDE[p] = alt; return callOne(p, prompt, maxTokens); }
+    }
+    throw await httpError(p, r);
+  }
   const j = await r.json();
   const text = (((j.choices || [])[0] || {}).message || {}).content;
   if (!text) throw new Error(p + '_empty_reply');

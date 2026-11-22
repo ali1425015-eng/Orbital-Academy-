@@ -71,7 +71,7 @@ docker run -d --restart=always -p 8080:8080 -v orbital_data:/data \
 
 | المزوّد | مجاني؟ | من أين المفتاح | المتغير | النموذج الافتراضي |
 |---|---|---|---|---|
-| **Groq** ⭐ الأسهل | نعم، بدون بطاقة | console.groq.com ← API Keys | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
+| **Groq** ⭐ الأسهل | نعم، بدون بطاقة | console.groq.com ← API Keys | `GROQ_API_KEY` | `llama-3.3-70b-versatile` (يتغير تلقائياً لو المزوّد ألغاه) |
 | Cerebras | نعم | cloud.cerebras.ai | `CEREBRAS_API_KEY` | `llama-3.3-70b` |
 | OpenRouter | نماذج `:free` | openrouter.ai/keys | `OPENROUTER_API_KEY` | `meta-llama/llama-3.3-70b-instruct:free` |
 | Google Gemini | مجاني في بعض الحسابات (انظر §7) | aistudio.google.com/apikey | `GEMINI_API_KEY` | `gemini-2.5-flash` |
