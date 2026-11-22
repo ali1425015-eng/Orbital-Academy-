@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orbital Academy</title>
+  <meta name="description" content="أكاديمية المدار — منصة تعليمية بأسلوب الألعاب: أجب عن أسئلة منهجك لتنقذ مركبتك الفضائية.">
+  <meta name="theme-color" content="#060822">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Space+Grotesk:wght@500;700&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <!-- backdrop: the approved design image (bright on the login screen, dimmed inside the app) -->
+  <div class="bg bg-login" aria-hidden="true"></div>
+  <div class="bg bg-app" aria-hidden="true"></div>
+  <canvas id="space" aria-hidden="true"></canvas>
+
+  <div id="toasts" role="status" aria-live="polite"></div>
+
+  <!-- screens (rendered by js/ui/*.js) -->
+  <section id="login" class="hidden"></section>
+  <main id="hub" class="hidden"></main>
+  <main id="mission" class="hidden"></main>
+  <main id="teacher" class="hidden"></main>
+  <div id="overlay-root"></div>
+
+  <noscript><p style="text-align:center;padding:40px">يحتاج هذا التطبيق إلى تفعيل JavaScript.</p></noscript>
+
+  <!-- shared core (also used by the Node server) -->
+  <script src="js/shared/rng.js"></script>
+  <script src="js/shared/concepts.js"></script>
+  <script src="js/shared/adaptive.js"></script>
+  <script src="js/shared/rules.js"></script>
+  <script src="js/shared/model-weights.js"></script>
+  <script src="js/shared/service.js"></script>
+  <script src="js/shared/tutor-local.js"></script>
+  <!-- client -->
+  <script src="data/bank/index.js"></script>
+  <script src="js/ui/util.js"></script>
+  <script src="js/ui/bg.js"></script>
+  <script src="js/ui/audio.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui/login.js"></script>
+  <script src="js/ui/hub.js"></script>
+  <script src="js/ui/panels.js"></script>
+  <script src="js/ui/mission.js"></script>
+  <script src="js/ui/teacher.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

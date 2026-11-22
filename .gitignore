@@ -1,0 +1,6 @@
+node_modules/
+data/orbital.db*
+data/.secret
+.env
+research/sim-dataset.csv
+dist/

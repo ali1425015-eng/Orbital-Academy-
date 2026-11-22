@@ -1,0 +1,4 @@
+rows: 706,553  (train 565,447 / test 141,106)  students: 2,500
+Model 1 P(correct):   Elo AUC 0.623 → logistic 0.635 (GB 0.643); ECE 0.003
+Model 2 P(disengage): 1−focus AUC 0.635 → logistic 0.664 (GB 0.669); base rate 0.106, threshold 0.14
+done in 6.6s → public/js/shared/model-weights.js, research/ml-report.json, research/figures/

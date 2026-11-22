@@ -1,0 +1,20 @@
+{
+  "name": "orbital-academy",
+  "version": "6.0.0",
+  "description": "Orbital Academy — a gamified, adaptive learning platform: curriculum questions (math, science, English, Arabic grammar) power a space-ship survival game, with an adaptive engine (Elo + BKT + spaced repetition), a focus model and an AI tutor.",
+  "private": true,
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "build": "node generator/build-bank.js && node tests/test-bank.js && node tools/curriculum-map.js",
+    "start": "node --no-warnings=ExperimentalWarning server/server.js",
+    "test": "node tests/test-bank.js && node --no-warnings=ExperimentalWarning tests/test-api.js",
+    "sim:dataset": "node ml/simulate.js dataset 2500",
+    "sim:ablation": "node ml/simulate.js ablation 600",
+    "train": "python3 ml/train.py",
+    "figures": "python3 ml/figures.py",
+    "research": "npm run sim:dataset && npm run train && npm run sim:ablation && npm run figures",
+    "demo-seed": "node --no-warnings=ExperimentalWarning tools/demo-seed.js",
+    "bundle": "node tools/bundle.js"
+  },
+  "license": "MIT"
+}

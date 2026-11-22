@@ -1,0 +1,25 @@
+random         learning gain 12.63 pts ±0.42 | accuracy 65.3% | rapid guesses 10.9% | engaged answers 429
+elo            learning gain 12.46 pts ±0.42 | accuracy 69.4% | rapid guesses 10.1% | engaged answers 369
+elo_sr         learning gain 13.77 pts ±0.46 | accuracy 67.0% | rapid guesses 10.4% | engaged answers 361
+elo_sr_focus   learning gain 13.41 pts ±0.44 | accuracy 68.2% | rapid guesses 7.6% | engaged answers 345
+full           learning gain 12.97 pts ±0.43 | accuracy 66.9% | rapid guesses 7.3% | engaged answers 293
+→ research/ablation.json
+random         learning gain 9.30 pts ±0.52 | accuracy 64.5% | rapid guesses 10.8% | engaged answers 430
+elo            learning gain 8.81 pts ±0.53 | accuracy 68.6% | rapid guesses 9.9% | engaged answers 372
+elo_sr         learning gain 9.89 pts ±0.55 | accuracy 65.9% | rapid guesses 10.4% | engaged answers 361
+elo_sr_focus   learning gain 9.81 pts ±0.55 | accuracy 67.1% | rapid guesses 7.6% | engaged answers 346
+full           learning gain 9.54 pts ±0.54 | accuracy 65.0% | rapid guesses 7.5% | engaged answers 289
+→ research/sens-zone0.6.json
+random         learning gain 16.73 pts ±0.77 | accuracy 68.5% | rapid guesses 10.3% | engaged answers 433
+elo            learning gain 16.01 pts ±0.80 | accuracy 71.4% | rapid guesses 9.7% | engaged answers 369
+elo_sr         learning gain 17.86 pts ±0.88 | accuracy 69.0% | rapid guesses 9.8% | engaged answers 363
+elo_sr_focus   learning gain 17.05 pts ±0.80 | accuracy 70.1% | rapid guesses 7.4% | engaged answers 347
+full           learning gain 16.65 pts ±0.79 | accuracy 68.6% | rapid guesses 7.1% | engaged answers 298
+→ research/sens-zone1.6.json
+random         learning gain 13.25 pts ±0.67 | accuracy 66.6% | rapid guesses 10.5% | engaged answers 432
+elo            learning gain 12.69 pts ±0.67 | accuracy 70.1% | rapid guesses 9.8% | engaged answers 371
+elo_sr         learning gain 14.26 pts ±0.74 | accuracy 67.8% | rapid guesses 10.0% | engaged answers 362
+elo_sr_focus   learning gain 13.86 pts ±0.69 | accuracy 68.8% | rapid guesses 7.5% | engaged answers 347
+full           learning gain 14.49 pts ±0.73 | accuracy 67.9% | rapid guesses 7.2% | engaged answers 295
+→ research/sens-tutor0.35.json
+PIPELINE_DONE
