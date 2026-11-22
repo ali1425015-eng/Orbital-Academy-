@@ -41,7 +41,13 @@ function poly(terms) { // [[coef,'x²'],[coef,'x'],[coef,'']]
   return out || '0';
 }
 
-const FILLER_NOTE = 'هذه قيمة قريبة لكنها ناتجة عن خطأ في الحساب — راجع الخطوات واحدة واحدة.';
+/* UI language switch for the curriculum generators. The generators are written in Arabic;
+   L('arabic text') returns the English text from en-dict.js when the bank is being built for 'en'.
+   build-bank.js sets global.__UI before (re)loading a generator, so module-level tables are translated too. */
+const EN = require('./en-dict');
+const MISSING = new Set();
+function L(s) { if (global.__UI !== 'en') return s; const e = EN.get(s); if (e === undefined) { MISSING.add(s); return s; } return e; }
+const FILLER_NOTE = L('هذه قيمة قريبة لكنها ناتجة عن خطأ في الحساب — راجع الخطوات واحدة واحدة.');
 
 /* Build a 4-option MCQ.
    correct: value; ds: [[value, note], ...] distractors; key(v): string used
@@ -50,13 +56,14 @@ const FILLER_NOTE = 'هذه قيمة قريبة لكنها ناتجة عن خط�
 function mcq(rng, correct, ds, fmt, opts) {
   opts = opts || {};
   fmt = fmt || (v => (v instanceof Frac ? v.toString() : num(v)));
+  const FN = L('هذه قيمة قريبة لكنها ناتجة عن خطأ في الحساب — راجع الخطوات واحدة واحدة.');
   const seen = new Set([fmt(correct)]);
   const out = [{ t: fmt(correct), note: null, ok: true }];
   for (const [v, note] of ds) {
     if (v === null || v === undefined || (typeof v === 'number' && !isFinite(v))) continue;
     const s = fmt(v);
     if (seen.has(s)) continue;
-    seen.add(s); out.push({ t: s, note: note || opts.filler || FILLER_NOTE, ok: false });
+    seen.add(s); out.push({ t: s, note: note || opts.filler || FN, ok: false });
     if (out.length === 4) break;
   }
   let guard = 0;
@@ -64,7 +71,7 @@ function mcq(rng, correct, ds, fmt, opts) {
     const v = opts.near(rng);
     const s = fmt(v);
     if (seen.has(s)) continue;
-    seen.add(s); out.push({ t: s, note: opts.filler || FILLER_NOTE, ok: false });
+    seen.add(s); out.push({ t: s, note: opts.filler || FN, ok: false });
   }
   if (out.length < 4) return null;
   const sh = rng.shuffle(out);
@@ -73,4 +80,4 @@ function mcq(rng, correct, ds, fmt, opts) {
 
 function nearInt(c, spread) { return r => c + (r.chance(0.5) ? 1 : -1) * r.int(1, spread || 5); }
 
-module.exports = { gcd, Frac, num, sup, term, poly, mcq, nearInt, FILLER_NOTE };
+module.exports = { TX: L, L, MISSING, gcd, Frac, num, sup, term, poly, mcq, nearInt, FILLER_NOTE };

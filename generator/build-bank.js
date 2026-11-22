@@ -10,26 +10,34 @@ const fs = require('fs');
 const path = require('path');
 const RNG = require('../js/shared/rng.js');
 const Concepts = require('../js/shared/concepts.js');
-const math = require('./gen-math');
-const sci = require('./gen-science');
-const eng = require('./gen-english');
-const ara = require('./gen-arabic');
 const learn = require('./gen-learning');
-const { mcq } = require('./common');
+const common = require('./common');
+const { mcq } = common;
 
 const ROOT = path.join(__dirname, '..');
 const scale = parseFloat(process.argv[2] || '1');
 const rng = new RNG('orbital-academy-bank-v1');
 
-const PLAN = []; // [subject, tag, generatorFn, targetCount]
+/* The curriculum generators are written in Arabic; for the English UI they are reloaded with
+   global.__UI = 'en' so every question, option, solution and misconception note is English.
+   Arabic grammar (nahw) only exists in the Arabic UI. */
 const BOOST = { derivative: 420, integral: 380, limits: 400, arith_seq: 400, logs: 200, geo_seq: 200, resistors: 380, elec_power: 380 };
-Object.keys(math).forEach(t => PLAN.push(['math', t, math[t], BOOST[t] || 230]));
-Object.keys(sci.T).forEach(t => PLAN.push(['science', t, sci.T[t], BOOST[t] || 210]));
-['present_simple', 'past_simple', 'present_cont', 'future_will', 'present_perfect', 'past_cont', 'passive', 'conditionals', 'irregular_verbs', 'comparatives', 'plurals', 'relative_clauses', 'modals', 'reported_speech', 'gerund_inf']
-  .forEach(t => PLAN.push(['english', t, eng[t], t === 'plurals' ? 120 : t === 'irregular_verbs' ? 200 : t === 'modals' ? 150 : (t === 'present_perfect' || t === 'past_cont' || t === 'passive' || t === 'conditionals') ? 420 : 260]));
-PLAN.push(['english', 'vocab', eng.vocab, 600]);
-PLAN.push(['arabic', 'nahw_roles', ara.rolesGen, 600]);
-Object.keys(ara.T).forEach(t => PLAN.push(['arabic', t, ara.T[t], 260]));
+function loadCurriculum(ui) {
+  global.__UI = ui;
+  ['gen-math', 'gen-science', 'gen-english', 'gen-arabic'].forEach(m => delete require.cache[require.resolve('./' + m)]);
+  const math = require('./gen-math'), sci = require('./gen-science'), eng = require('./gen-english'), ara = require('./gen-arabic');
+  const plan = [];
+  Object.keys(math).forEach(t => plan.push(['math', t, math[t], BOOST[t] || 230]));
+  Object.keys(sci.T).forEach(t => plan.push(['science', t, sci.T[t], BOOST[t] || 210]));
+  ['present_simple', 'past_simple', 'present_cont', 'future_will', 'present_perfect', 'past_cont', 'passive', 'conditionals', 'irregular_verbs', 'comparatives', 'plurals', 'relative_clauses', 'modals', 'reported_speech', 'gerund_inf']
+    .forEach(t => plan.push(['english', t, eng[t], t === 'plurals' ? 120 : t === 'irregular_verbs' ? 200 : t === 'modals' ? 150 : (t === 'present_perfect' || t === 'past_cont' || t === 'passive' || t === 'conditionals') ? 420 : 260]));
+  plan.push(['english', 'vocab', eng.vocab, 600]);
+  if (ui === 'ar') {
+    plan.push(['arabic', 'nahw_roles', ara.rolesGen, 600]);
+    Object.keys(ara.T).forEach(t => plan.push(['arabic', t, ara.T[t], 260]));
+  }
+  return { plan, sci, ara };
+}
 
 const DIFF_LABEL = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
 const all = [];
@@ -66,18 +74,25 @@ function push(subject, tag, raw) {
   return true;
 }
 
-for (const [subject, tag, fn, target] of PLAN) {
-  const want = Math.round(target * scale);
-  let made = 0, tries = 0;
-  while (made < want && tries < want * 12) { tries++; let raw = null; try { raw = fn(rng); } catch (e) { raw = null; } if (push(subject, tag, raw)) made++; }
+const crashes = {};
+for (const ui of ['ar', 'en']) {
+  const cur = loadCurriculum(ui);
+  const cap = fn => (r => { const raw = fn(r); if (raw) { raw.ui = ui; if (ui === 'en') raw.lang = 'en'; } return raw; });
+  for (const [subject, tag, fn, target] of cur.plan) {
+    const want = Math.round(target * scale);
+    let made = 0, tries = 0;
+    while (made < want && tries < want * 12) { tries++; let raw = null; try { raw = cap(fn)(rng); } catch (e) { raw = null; (crashes[ui + ':' + subject + '.' + tag] = crashes[ui + ':' + subject + '.' + tag] || { n: 0, msg: e.message }).n++; } if (push(subject, tag, raw)) made++; }
+  }
+  // curated science
+  for (const c of cur.sci.curated()) {
+    const m = mcq(rng, c.correct, c.ds, x => x);
+    push('science', c.tag, { g: c.g, d: c.d, q: c.q, m, e: c.e, tag: c.tag, ui, lang: ui });
+  }
+  if (ui === 'ar') for (const it of cur.ara.rolesCurated()) push('arabic', 'nahw_roles', Object.assign(cur.ara.roleQuestion(rng, it), { tag: 'nahw_roles', ui }));
 }
-// curated science
-for (const c of sci.curated()) {
-  const m = mcq(rng, c.correct, c.ds, x => x);
-  push('science', c.tag, { g: c.g, d: c.d, q: c.q, m, e: c.e, tag: c.tag });
-}
-// curated Arabic roles (each sentence twice with different option sets is not useful → once)
-for (const it of ara.rolesCurated()) push('arabic', 'nahw_roles', Object.assign(ara.roleQuestion(rng, it), { tag: 'nahw_roles' }));
+if (Object.keys(crashes).length) { console.error('GENERATOR CRASHES (a crashing generator silently loses its questions):'); Object.keys(crashes).forEach(k => console.error('  ', k, crashes[k].n + '×', crashes[k].msg)); process.exitCode = 1; }
+if (common.MISSING.size) { console.error('MISSING translations:', common.MISSING.size); [...common.MISSING].slice(0, 10).forEach(x => console.error('  ', x)); process.exitCode = 1; }
+global.__UI = 'ar';
 
 // learning track (grade 0), generated separately for Arabic and English
 for (const ui of ['ar', 'en']) {
@@ -104,7 +119,7 @@ fs.readdirSync(bankDir).forEach(f => fs.unlinkSync(path.join(bankDir, f)));
 const index = { generated: new Date().toISOString().slice(0, 10), total: all.length, bySubject: {}, byGrade: {}, byConcept: {}, chunks: {} };
 const groups = {};
 all.forEach(q => {
-  const k = q.subject + '-g' + q.gradeLevel;
+  const k = q.subject + '-g' + q.gradeLevel + '-' + (q.ui || 'ar');
   (groups[k] = groups[k] || []).push([q.questionId, q.gradeLevel, q.difficulty, q.conceptTag, q.questionText, q.options, q.correctOptionIndex, q.explanation, q.optionNotes, q.lang, q.ui]);
   index.bySubject[q.subject] = (index.bySubject[q.subject] || 0) + 1;
   index.byGrade[q.gradeLevel] = (index.byGrade[q.gradeLevel] || 0) + 1;

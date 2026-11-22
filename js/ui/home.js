@@ -11,7 +11,7 @@
   }
 
   function render(el, u, prog) {
-    var subs = C.subjectsFor(u.gradeLevel), avg = subjectAvg(prog), st = U.settings, l = OA.I18N.get();
+    var subs = C.subjectsFor(u.gradeLevel, OA.I18N.get()), avg = subjectAvg(prog), st = U.settings, l = OA.I18N.get();
     OA.app.subjAvg = avg;
     if (subs.indexOf(sel.subject) < 0) sel.subject = subs[0];
     var today = (prog && prog.daily || [])[0], todayKey = new Date().toISOString().slice(0, 10), done = today && today.d === todayKey ? today.n : 0;

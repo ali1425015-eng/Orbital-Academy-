@@ -36,7 +36,7 @@
     U.$('#mission').innerHTML =
       '<header class="m-top">' +
         '<button class="btn sm" id="m-exit">' + U.icon('x', 16) + '<span class="hide-sm">' + t('exit') + '</span></button>' +
-        '<span class="chip" style="background:color-mix(in srgb,' + U.SUBJ_COLOR[subj] + ' 14%,#fff)">' + (C.SUBJECTS[subj] || {}).icon + ' ' + U.esc(U.subjectName(subj)) + '</span>' +
+        '<span class="chip" style="background:color-mix(in srgb,' + U.SUBJ_COLOR[subj] + ' 16%,var(--surface))">' + (C.SUBJECTS[subj] || {}).icon + ' ' + U.esc(U.subjectName(subj)) + '</span>' +
         '<div class="m-prog">' + U.icon(M.count ? 'list' : 'clock', 18) + '<div class="bar"><i id="m-pbar" style="width:0%"></i></div><b id="m-ptxt" class="num">--</b></div>' +
         '<span class="stat-pill">' + U.icon('star', 16) + '<span id="m-xp">0</span></span>' +
         '<span class="stat-pill combo" title="' + t('combo') + '">' + U.icon('flame', 16) + '×<span id="m-combo">0</span></span>' +
@@ -45,7 +45,7 @@
       '</header>' +
       '<div class="m-grid">' +
         '<div class="shipcol"><section class="card shipcard"><div class="card-h"><h3>' + U.icon('rocket') + t('ship') + '</h3></div><div class="card-b"><div id="m-res"></div>' + shipSVG() + '</div></section></div>' +
-        '<div class="qcol"><div id="m-banner"></div><section class="card qcard" id="m-q"><div class="empty">…</div></section></div>' +
+        '<div class="qcol">' + (M.count ? '<div class="route" id="m-route"></div>' : '') + '<div id="m-banner"></div><section class="card qcard" id="m-q"><div class="empty">…</div></section></div>' +
         '<div class="stack-lg"><section class="card copilot"><div class="card-h"><h3>' + U.icon('sparkle') + t('copilot') + '</h3></div><div class="card-b" id="m-ai"></div></section>' +
           '<section class="card"><div class="card-h"><h3>' + U.icon('list') + t('log') + '</h3></div><div class="card-b log" id="m-log"></div></section></div>' +
       '</div>';
@@ -67,7 +67,10 @@
     if (!U.$('#m-xp')) return;
     U.$('#m-xp').textContent = U.fmt(M.xp); U.$('#m-combo').textContent = M.combo;
     var fb = U.$('#m-fbar'); fb.style.width = (M.focus * 100) + '%'; fb.style.background = M.focus > 0.7 ? 'var(--green)' : M.focus > 0.45 ? 'var(--amber)' : 'var(--red)';
-    if (M.count) { U.$('#m-pbar').style.width = (M.answered / M.target * 100) + '%'; U.$('#m-ptxt').textContent = M.answered + '/' + M.target; }
+    if (M.count) {
+      U.$('#m-pbar').style.width = (M.answered / M.target * 100) + '%'; U.$('#m-ptxt').textContent = M.answered + '/' + M.target;
+      var rt = U.$('#m-route'); if (rt) { var h = ''; for (var i = 0; i < M.target; i++) h += '<i class="' + (i < M.answered ? 'done' : i === M.answered ? 'now' : '') + '"></i>'; rt.innerHTML = h; }
+    }
   }
   function log(s) { M.log.unshift(s); var el = U.$('#m-log'); if (el) el.innerHTML = M.log.slice(0, 30).map(function (x) { return '<div>' + x + '</div>'; }).join(''); }
 
@@ -131,10 +134,10 @@
     M.qLimit = Math.round(Math.max(25, Math.min(90, (r.expectedSec || 15) * 3)));
     var ltr = q.lang === 'en', diff = ['', 'easy', 'medium', 'hard'][q.difficulty], dc = ['', 'green', 'amber', 'red'][q.difficulty];
     U.$('#m-q').innerHTML =
-      '<div class="qmeta"><span class="chip brand">' + U.esc(U.conceptName(q.conceptTag)) + '</span><span class="chip ' + dc + '">' + t(diff) + '</span>' +
+      '<div class="qmeta"><span class="qsig"><i></i>' + t('signal') + '</span><span class="chip brand">' + U.esc(U.conceptName(q.conceptTag)) + '</span><span class="stars ' + dc + '" title="' + t(diff) + '" aria-label="' + t(diff) + '">' + '★★★'.slice(0, q.difficulty) + '<s>' + '★★★'.slice(0, 3 - q.difficulty) + '</s></span>' +
         (M.count ? '<span class="chip">' + t('questionOf', { a: M.answered + 1, b: M.target }) + '</span>' : '') +
         (U.settings.timer ? '<span class="qtimer"><svg width="46" height="46"><circle cx="23" cy="23" r="21" stroke="var(--line)" stroke-width="4" fill="none"/><circle id="qt-arc" cx="23" cy="23" r="21" stroke="#6A4CFF" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="132" stroke-dashoffset="0"/></svg><b id="qt-t">' + M.qLimit + '</b></span>' : '') + '</div>' +
-      '<div class="qtext" dir="' + (ltr ? 'ltr' : 'rtl') + '">' + U.qhtml(q.questionText) + '</div>' +
+      '<div class="qscreen"><div class="qtext" dir="' + (ltr ? 'ltr' : 'rtl') + '">' + U.qhtml(q.questionText) + '</div></div>' +
       '<div class="options" dir="' + (ltr ? 'ltr' : 'rtl') + '">' + q.options.map(function (o, i) { return '<button class="opt" data-i="' + i + '"><span class="k">' + (ltr ? 'ABCD' : 'أبجد')[i] + '</span><span class="t" dir="auto">' + U.esc(o) + '</span></button>'; }).join('') + '</div>' +
       '<div class="tools"><button class="btn sm" id="pu-fifty"' + (M.res.power < 20 ? ' disabled' : '') + '>' + U.icon('scissors', 16) + t('fifty') + ' <span class="tiny mut">' + t('costPower') + '</span></button>' +
         '<button class="btn sm" id="pu-hint">' + U.icon('bulb', 16) + t('hint') + ' <span class="tiny mut">' + t('halfXp') + '</span></button>' +

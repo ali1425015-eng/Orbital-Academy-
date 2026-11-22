@@ -40,7 +40,7 @@ loadQuestions();
 /* ONLY the student's own grade. Learning track (grade 0): only the student's interface language. */
 function poolFor(subject, grade, ui) {
   const all = POOLS[subject + '|' + grade] || [];
-  return +grade === 0 ? all.filter(q => q.ui === (ui === 'en' ? 'en' : 'ar')) : all;
+  return all.filter(q => q.ui === (ui === 'en' ? 'en' : 'ar'));
 }
 function cleanSubject(s, grade) { if (!Concepts.subjectsFor(grade).includes(s)) throw new HttpError(400, 'bad_subject'); return s; }
 const cleanLang = l => (l === 'en' ? 'en' : 'ar');
@@ -411,7 +411,7 @@ const server = http.createServer(async (req, res) => {
 if (require.main === module) {
   server.listen(PORT, HOST, () => {
     log('Orbital Academy v' + VERSION + ' → http://localhost:' + PORT);
-    log('AI tutor: ' + (tutor.provider() ? tutor.provider() + ' (' + tutor.modelName(tutor.provider()) + ')' : 'offline curriculum explainer (set GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY to enable an LLM)'));
+    log('AI tutor: ' + (tutor.provider() ? tutor.provider() + ' (' + tutor.modelName(tutor.provider()) + ')' : 'offline curriculum explainer (set a free GROQ_API_KEY, or GEMINI_API_KEY / OPENROUTER_API_KEY / … to enable an LLM — see docs/DEPLOY.md)'));
     log('Google sign-in: ' + (GOOGLE_CLIENT_ID ? 'enabled' : 'disabled (set GOOGLE_CLIENT_ID)'));
     log('ML model: ' + (Model ? 'loaded (' + Model.version + ')' : 'not found — using Elo only'));
   });

@@ -1,6 +1,6 @@
 {
   "name": "orbital-academy",
-  "version": "7.0.0",
+  "version": "8.0.0",
   "description": "Orbital Academy — a gamified, adaptive learning platform: curriculum questions (math, science, English, Arabic grammar) power a space-ship survival game, with an adaptive engine (Elo + BKT + spaced repetition), a focus model and an AI tutor.",
   "private": true,
   "engines": { "node": ">=22.13" },

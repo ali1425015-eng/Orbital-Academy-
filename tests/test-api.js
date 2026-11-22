@@ -87,6 +87,19 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       for (let i = 0; i < 30; i++) { r = await call('POST', '/api/missions/' + gm + '/next', { subject: 'iq' }, tok); assert.strictEqual(r.body.question.gradeLevel, 10, 'served grade ' + r.body.question.gradeLevel); assert.strictEqual(r.body.question.subject, sub, 'subject switched mid-mission'); }
     }
     ok('120 questions in 4 single-subject missions — all from grade 10, subject never changes mid-mission');
+    // English interface: the WHOLE question (text, options, solution, notes) is English, grade 10 only; Arabic UI never gets English-UI rows
+    for (const sub of ['math', 'science', 'english']) {
+      r = await call('POST', '/api/missions', { subject: sub, durationSec: 120 }, tok); const em = r.body.mission.missionId;
+      for (let i = 0; i < 25; i++) {
+        r = await call('POST', '/api/missions/' + em + '/next', { lang: 'en' }, tok); const q = r.body.question; assert.strictEqual(q.gradeLevel, 10); assert.strictEqual(q.ui, 'en');
+        assert.ok(!/[\u0600-\u06FF]/.test(q.questionText + q.options.join(' ')), 'Arabic inside an English-UI question: ' + q.questionId);
+        const row = db.prepare('SELECT explanation, optionNotes FROM questions WHERE questionId=?').get(q.questionId); assert.ok(!/[\u0600-\u06FF]/.test(row.explanation + row.optionNotes), 'Arabic in the English solution/notes');
+      }
+      r = await call('POST', '/api/missions/' + em + '/next', { lang: 'ar' }, tok); assert.strictEqual(r.body.question.ui, 'ar');
+    }
+    ok('English interface: 75 curriculum questions (math/science/english) are English end-to-end (text, options, solution, notes); Arabic interface gets Arabic rows');
+    r = await call('POST', '/api/missions', { subject: 'arabic', durationSec: 120 }, tok); const am = r.body.mission.missionId;
+    r = await call('POST', '/api/missions/' + am + '/next', { lang: 'en' }, tok); assert.strictEqual(r.status, 404); ok('Arabic grammar has no English-interface questions (hidden in the UI, refused by the API)');
     r = await call('POST', '/api/missions', { subject: 'iq' }, tok); assert.strictEqual(r.status, 400); ok('school-grade student cannot open a learning-track subject (IQ)');
     r = await call('POST', '/api/missions', { subject: 'mixed' }, tok); assert.strictEqual(r.status, 400); ok('unknown subject rejected');
 
@@ -135,8 +148,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok('AI tutor called the LLM with the curriculum prompt');
     r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: wrong }, tok); assert.strictEqual(r.body.cached, true); ok('tutor answer cached');
     r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: wrong, lang: 'en' }, tok); assert.ok(/in English/.test(lastPrompt)); assert.ok(!r.body.cached); ok('tutor explains in English when the interface is English (separate cache entry)');
+    // provider failover: the first (free) provider is down, the next configured one answers
+    process.env.GROQ_API_KEY = 'test-key'; process.env.GROQ_BASE_URL = 'http://127.0.0.1:1/openai/v1';
+    const sel2 = [0, 1, 2, 3].find(x => x !== ci && x !== wrong);
+    r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: sel2 }, tok);
+    assert.ok(r.body.provider.startsWith('openai'), 'fell through to the next provider'); ok('AI provider failover: Groq down → OpenAI-compatible fallback answered');
+    delete process.env.GROQ_API_KEY; delete process.env.GROQ_BASE_URL;
     mock.close(); process.env.OPENAI_BASE_URL = 'http://127.0.0.1:1';
-    r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: (wrong + 1) % 4 === ci ? (wrong + 2) % 4 : (wrong + 1) % 4 }, tok);
+    r = await call('POST', '/api/tutor', { questionId: q.questionId, selected: [0, 1, 2, 3].find(x => x !== ci && x !== wrong && x !== sel2) }, tok);
     assert.strictEqual(r.body.provider, 'local'); assert.ok(r.body.text.includes('الإجابة الصحيحة')); ok('LLM down → offline curriculum explanation');
 
     r = await call('POST', '/api/missions/' + mid + '/end', { survived: true }, tok);

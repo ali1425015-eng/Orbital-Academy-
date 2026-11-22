@@ -32,9 +32,21 @@
     share: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13', refresh: 'M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15',
     rocket: 'M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1zM12 15l-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2zM9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5',
     star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z', book: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5z',
-    send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z', lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', mail: 'M4 4h16v16H4zM4 6l8 7 8-7'
+    moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z', sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4', send: 'M22 2L11 13M22 2l-7 20-4-9-9-4z', lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', mail: 'M4 4h16v16H4zM4 6l8 7 8-7'
   };
   U.icon = function (name, size) { size = size || 20; return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (P[name] || '') + '"/></svg>'; };
+  /* theme: light / dark, remembered per device, defaults to the system setting */
+  U.theme = {
+    get: function () { return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; },
+    set: function (v) {
+      document.documentElement.setAttribute('data-theme', v);
+      try { localStorage.setItem('oa_theme', v); } catch (e) {}
+      var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', v === 'dark' ? '#0E0F1E' : '#6A4CFF');
+    },
+    toggle: function () { this.set(this.get() === 'dark' ? 'light' : 'dark'); },
+    button: function (id) { var d = this.get() === 'dark'; return '<button class="btn ghost sm icon-btn" id="' + id + '" type="button" title="' + (d ? OA.t('lightMode') : OA.t('darkMode')) + '" aria-label="' + OA.t('theme') + '">' + U.icon(d ? 'sun' : 'moon', 18) + '</button>'; },
+    wire: function (id, after) { var b = U.$('#' + id); if (b) b.onclick = function () { U.theme.toggle(); if (after) after(); else b.outerHTML = U.theme.button(id), U.theme.wire(id, after); }; }
+  };
   U.logo = function (light) {
     return '<div class="brand' + (light ? ' light' : '') + '"><span class="brand-mark"><svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke-width="4"><ellipse cx="32" cy="32" rx="26" ry="10" stroke="#fff"/><ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(60 32 32)" stroke="#fff" opacity=".8"/><ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(120 32 32)" stroke="#fff" opacity=".6"/></g><circle cx="32" cy="32" r="7" fill="#fff"/></svg></span><span class="brand-name">Orbital<b>Academy</b></span></div>';
   };

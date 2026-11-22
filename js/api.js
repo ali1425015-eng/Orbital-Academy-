@@ -81,7 +81,8 @@
   };
   /* ONLY the student's own grade; learning track (grade 0): only the interface language */
   Bank.pool = function (subject, grade, ui) {
-    return Bank.loadChunk(subject + '-g' + grade).then(function (rows) { return +grade === 0 ? rows.filter(function (q) { return q.ui === (ui === 'en' ? 'en' : 'ar'); }) : rows; });
+    var l = ui === 'en' ? 'en' : 'ar';
+    return Bank.loadChunk(subject + '-g' + grade + '-' + l).then(function (rows) { return rows.filter(function (q) { return q.ui === l; }); });
   };
 
   /* ------------------------------ Local ------------------------------ */

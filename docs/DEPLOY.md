@@ -17,7 +17,7 @@
 |---|---|---|
 | `AUTH_SECRET` | **نعم** | نص عشوائي طويل لتوقيع جلسات الدخول. ثابت — لو تغيّر يخرج كل المستخدمين. ولّده: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `DATA_DIR` و `DB_FILE` | في Docker يُضبطان تلقائياً | `/data` و `/data/orbital.db` — **يجب أن يكون `/data` هو مسار الـ Volume** |
-| `GEMINI_API_KEY` أو `OPENAI_API_KEY` أو `ANTHROPIC_API_KEY` | للمدرس الذكي | واحد فقط يكفي (انظر §5). بدونه يعمل شرح المنهج المحلي |
+| `GROQ_API_KEY` (مجاني) أو `GEMINI_API_KEY` أو `OPENROUTER_API_KEY` أو `OPENAI_API_KEY` … | للمدرس الذكي | واحد يكفي (انظر §5). بدونه يعمل شرح المنهج المحلي |
 | `GOOGLE_CLIENT_ID` | لتسجيل Google | ليس سراً (انظر §4) |
 | `PORT` | لا | تضبطه المنصة |
 
@@ -66,17 +66,29 @@ docker run -d --restart=always -p 8080:8080 -v orbital_data:/data \
 
 > الخادم يتحقق من توكن Google عبر `oauth2.googleapis.com/tokeninfo` ويفحص أن `aud` يطابق `GOOGLE_CLIENT_ID`. **لم أستطع تجربة هذا التدفق حقاً** (يحتاج Client ID حقيقياً ومتصفحاً على نطاقك) — اختبره بنفسك أول مرة. إن ظهر `origin_mismatch` فالرابط في الخطوة 4 لا يطابق رابط موقعك حرفياً.
 
-## 5) المدرس الذكي (LLM)
-اختر واحداً وأنشئ مفتاح API من موقعه، ثم ضعه في متغير البيئة المقابل:
-| المزوّد | من أين المفتاح | المتغير | النموذج الافتراضي |
-|---|---|---|---|
-| Google Gemini | Google AI Studio | `GEMINI_API_KEY` | `gemini-2.5-flash` |
-| OpenAI | platform.openai.com | `OPENAI_API_KEY` | `gpt-4o-mini` |
-| Anthropic | console.anthropic.com | `ANTHROPIC_API_KEY` | `claude-haiku-5-5` |
+## 5) المدرس الذكي (LLM) — **مجاناً بدون دفع**
+ضع **مفتاحاً واحداً على الأقل** في Railway ← Variables. إن وضعت أكثر من واحد يجرّبهم الخادم بالترتيب (المجاني أولاً) وينتقل للتالي تلقائياً لو فشل أحدهم (حصة منتهية مثلاً)، ولو فشلوا كلهم يعود لشرح المنهج المحلي — اللعبة لا تتعطل أبداً.
 
-- يمكن تغيير النموذج بـ `GEMINI_MODEL` / `OPENAI_MODEL` / `ANTHROPIC_MODEL`.
-- **التكلفة:** كل خطأ يُرسل طلباً واحداً قصيراً (ثم يُخزَّن الرد في قاعدة البيانات لإعادة استخدامه)، وسؤال المحادثة محدود بعدد الطلبات لكل طالب في الدقيقة. راجع حدود وأسعار المزوّد الحالية، وضع حداً للإنفاق في لوحة المزوّد.
-- لو فشل الـ LLM لأي سبب يعود الخادم تلقائياً لشرح المنهج المحلي (سترى في السجل `tutor fallback: …`).
+| المزوّد | مجاني؟ | من أين المفتاح | المتغير | النموذج الافتراضي |
+|---|---|---|---|---|
+| **Groq** ⭐ الأسهل | نعم، بدون بطاقة | console.groq.com ← API Keys | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
+| Cerebras | نعم | cloud.cerebras.ai | `CEREBRAS_API_KEY` | `llama-3.3-70b` |
+| OpenRouter | نماذج `:free` | openrouter.ai/keys | `OPENROUTER_API_KEY` | `meta-llama/llama-3.3-70b-instruct:free` |
+| Google Gemini | مجاني في بعض الحسابات (انظر §7) | aistudio.google.com/apikey | `GEMINI_API_KEY` | `gemini-2.5-flash` |
+| Mistral | خطة Experiment المجانية | console.mistral.ai | `MISTRAL_API_KEY` | `mistral-small-latest` |
+| OpenAI / Anthropic | مدفوع | platform.openai.com / console.anthropic.com | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | `gpt-4o-mini` / `claude-haiku-5-5` |
+| **أي مزوّد متوافق مع OpenAI** | حسب المزوّد | — | `AI_API_KEY` + `AI_BASE_URL` + `AI_MODEL` | — |
+
+**أسرع طريقة (دقيقتان):**
+1. ادخل console.groq.com بحسابك ← **API Keys** ← **Create API Key** ← انسخ المفتاح.
+2. Railway ← خدمتك ← **Variables** ← **New Variable**: الاسم `GROQ_API_KEY` والقيمة المفتاح ← احفظ (يُعاد النشر تلقائياً).
+3. افتح `/api/health` — يجب أن ترى `"ai":"groq:llama-3.3-70b-versatile"`.
+4. أجب إجابة خاطئة عمداً ← تظهر شارة **✨ groq** في نافذة المدرس.
+
+- يمكن تغيير النموذج بـ `GROQ_MODEL` / `GEMINI_MODEL` / `OPENROUTER_MODEL` … ، وعنوان الخدمة بـ `<NAME>_BASE_URL` (مثل `GROQ_BASE_URL`).
+- `AI_PROVIDER=gemini` (مثلاً) يجعل مزوّداً معيّناً أولاً.
+- **لا تكتب المفتاح في الشات ولا في الكود** — فقط في Variables. إن ظهر مفتاحك في أي مكان عام فاحذفه من موقع المزوّد وأنشئ غيره.
+- الحدود المجانية تتغير وقد تكفي عشرات الطلاب لا آلاف؛ كل خطأ يُرسل طلباً قصيراً واحداً ثم يُخزَّن الرد لإعادة استخدامه، والمحادثة محدودة بعدد الطلبات للطالب في الدقيقة.
 - **الخصوصية:** يُرسل للـ LLM نص السؤال والصف والخيارات فقط — **لا اسم الطالب ولا بريده**.
 
 ## 6) اختبار بعد النشر (5 دقائق)
@@ -104,13 +116,5 @@ docker run -d --restart=always -p 8080:8080 -v orbital_data:/data \
 - خذ **نسخة احتياطية** دورية من `orbital.db` (من لوحة المنصة أو `fly ssh sftp`) — أو اعتمد على تصدير CSV من لوحة المعلم.
 - راقب الاستهلاك (الأسئلة والـ LLM) في الأسبوع الأول قبل التوسع.
 
-## 9) مزوّد ذكاء اصطناعي آخر (إن لم يعمل Gemini)
-الخادم يدعم أي مزوّد **متوافق مع واجهة OpenAI** عبر ثلاثة متغيرات (لا حاجة لتغيير الكود):
-| المتغير | مثال |
-|---|---|
-| `OPENAI_API_KEY` | مفتاح المزوّد |
-| `OPENAI_BASE_URL` | عنوان المزوّد بدون `/v1` (يُضاف تلقائياً `/v1/chat/completions`) — راجع توثيق المزوّد |
-| `OPENAI_MODEL` | اسم النموذج عند المزوّد |
-| `AI_PROVIDER` | `openai` (إن كان عندك مفتاح Gemini أيضاً) |
-
-بعض المزوّدين لديهم خطط مجانية بحدود، وأسعارهم وشروطهم تتغير — راجعها. جرّب دائماً بإجابة خاطئة عمداً وتأكد أن الشارة في نافذة المدرس **ليست** «شرح المنهج (محلي)».
+## 9) مزوّد ذكاء اصطناعي آخر
+أي خدمة تتبع واجهة OpenAI تعمل بثلاثة متغيرات (بدون تغيير الكود): `AI_API_KEY` و`AI_BASE_URL` (مثل `https://host/v1`) و`AI_MODEL`. جرّب دائماً بإجابة خاطئة عمداً وتأكد أن الشارة في نافذة المدرس **ليست** «شرح المنهج (محلي)». الأسعار والحدود المجانية تتغير — راجع موقع المزوّد.

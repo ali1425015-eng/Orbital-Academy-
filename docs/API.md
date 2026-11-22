@@ -12,7 +12,7 @@ All endpoints are JSON. Authenticated endpoints need `Authorization: Bearer <tok
 | GET / PATCH | `/api/me` | ✓ | read / update `gradeLevel, avatar, displayName, classCode` |
 | GET | `/api/questions?subject&grade&limit&difficulty&lang` | ✓ | `fetchQuestions` — random sample; students never receive `correctOptionIndex` |
 | POST | `/api/missions` | ✓ | `{subject, mode: 'time'|'count', durationSec (time) or target (count, 5–50)}` → mission. School grades: `math|science|english|arabic`; learning track (grade 0): `iq|lenglish|lscience|lmath`. The subject is fixed for the whole mission. |
-| POST | `/api/missions/:id/next` | ✓ | `{focus, tabSwitches, sinceBreakMin, lang: 'ar'|'en'}` (lang picks the learning-track pool; 409 `mission_complete` when a count mission is done) → adaptive question + `predicted`, `risk`, `riskThreshold`, `mastery` |
+| POST | `/api/missions/:id/next` | ✓ | `{focus, tabSwitches, sinceBreakMin, lang: 'ar'|'en'}` (lang picks the question pool — every subject has an Arabic and an English pool; Arabic grammar only exists in `ar`; 409 `mission_complete` when a count mission is done) → adaptive question + `predicted`, `risk`, `riskThreshold`, `mastery` |
 | POST | `/api/missions/:id/answer` | ✓ | `{questionId, selected (-1 = timeout), ms, hidden, usedHint}` → `{correct, correctOptionIndex, explanation, note, xp, combo, focus, mastery, rapid, badges...}` |
 | POST | `/api/missions/:id/fifty` | ✓ | `{questionId}` → `{remove:[i,j]}` (server picks two wrong options, ½ XP) |
 | POST | `/api/missions/:id/end` | ✓ | `{survived}` → bonus, level, rank, new badges, summary |

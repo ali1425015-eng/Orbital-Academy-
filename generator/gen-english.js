@@ -3,7 +3,7 @@
    option is grammatical (e.g. the past-continuous items never offer the
    simple past, which can also be acceptable after "while"). */
 'use strict';
-const { mcq } = require('./common');
+const { TX, mcq } = require('./common');
 
 // base, 3rd-person, past, past participle, -ing, complement, allowsContinuous
 const V = [
@@ -42,17 +42,17 @@ T.present_simple = r => {
   const mk = adv ? r.pick(['usually', 'always', 'often', 'sometimes', 'never']) : r.pick(['every day', 'every weekend', 'twice a week', 'every morning', 'on Fridays']);
   const sent = adv ? s[0] + ' ' + mk + ' ___ ' + v[5] + '.' : s[0] + ' ___ ' + v[5] + ' ' + mk + '.';
   const correct = s[4] ? v[1] : v[0];
-  const m = mcq(r, correct, [[s[4] ? v[0] : v[1], s[4] ? 'مع الفاعل المفرد الغائب (he/she/it) نضيف s للفعل في المضارع البسيط.' : 'لا نضيف s إلا مع الفاعل المفرد الغائب.'], [v[2], 'هذا ماضٍ بسيط، والكلمة الدالة "' + mk + '" تدل على عادة في الحاضر.'], [s[1] + ' ' + v[4], 'المضارع المستمر لحدث يحدث الآن، أما "' + mk + '" فتدل على عادة متكررة.']], x => x);
-  return { d: s[4] ? 1 : 1, q: 'Choose the correct answer:\n' + sent, m, e: '"' + mk + '" تدل على عادة ← المضارع البسيط: ' + s[0] + ' ' + correct + '.', lang: 'en' };
+  const m = mcq(r, correct, [[s[4] ? v[0] : v[1], s[4] ? TX('مع الفاعل المفرد الغائب (he/she/it) نضيف s للفعل في المضارع البسيط.') : TX('لا نضيف s إلا مع الفاعل المفرد الغائب.')], [v[2], TX('هذا ماضٍ بسيط، والكلمة الدالة "') + mk + TX('" تدل على عادة في الحاضر.')], [s[1] + ' ' + v[4], TX('المضارع المستمر لحدث يحدث الآن، أما "') + mk + TX('" فتدل على عادة متكررة.')]], x => x);
+  return { d: s[4] ? 1 : 1, q: 'Choose the correct answer:\n' + sent, m, e: '"' + mk + TX('" تدل على عادة ← المضارع البسيط: ') + s[0] + ' ' + correct + '.', lang: 'en' };
 };
 
 T.past_simple = r => {
   const v = r.pick(V), s = r.pick(S);
   const mk = r.pick(['yesterday', 'last week', 'two days ago', 'in 2019', 'last summer', 'last night']);
   const correct = v[2];
-  const ds = [[s[4] ? v[1] : v[0], 'هذا مضارع بسيط، و"' + mk + '" كلمة دالة على الماضي.'], [s[3] + ' ' + v[3], 'المضارع التام لا يُستخدم مع زمن محدد في الماضي مثل "' + mk + '".'], ['will ' + v[0], 'هذا مستقبل، والجملة تتحدث عن الماضي.']];
+  const ds = [[s[4] ? v[1] : v[0], TX('هذا مضارع بسيط، و"') + mk + TX('" كلمة دالة على الماضي.')], [s[3] + ' ' + v[3], TX('المضارع التام لا يُستخدم مع زمن محدد في الماضي مثل "') + mk + '".'], ['will ' + v[0], TX('هذا مستقبل، والجملة تتحدث عن الماضي.')]];
   const m = mcq(r, correct, ds, x => x);
-  return { d: v[2].endsWith('ed') ? 1 : 2, q: 'Choose the correct answer:\n' + s[0] + ' ___ ' + v[5] + ' ' + mk + '.', m, e: '"' + mk + '" ← الماضي البسيط (التصريف الثاني): ' + v[2] + '.', lang: 'en' };
+  return { d: v[2].endsWith('ed') ? 1 : 2, q: 'Choose the correct answer:\n' + s[0] + ' ___ ' + v[5] + ' ' + mk + '.', m, e: '"' + mk + TX('" ← الماضي البسيط (التصريف الثاني): ') + v[2] + '.', lang: 'en' };
 };
 
 T.present_cont = r => {
@@ -60,15 +60,15 @@ T.present_cont = r => {
   const pre = r.pick(['Look! ', 'Listen! ', '', '']), mk = pre ? '' : r.pick([' now', ' at the moment', ' right now']);
   const correct = s[1] + ' ' + v[4];
   const wrongBe = s[1] === 'is' ? 'are' : s[1] === 'are' ? 'is' : 'is';
-  const m = mcq(r, correct, [[s[4] ? v[1] : v[0], 'المضارع البسيط للعادات، أما ' + (pre ? '"' + pre.trim() + '"' : '"' + mk.trim() + '"') + ' فتدل على حدث يحدث الآن.'], [wrongBe + ' ' + v[4], 'فعل be لا يتوافق مع الفاعل: ' + s[0] + ' ← ' + s[1] + '.'], [v[2], 'هذا ماضٍ بسيط.']], x => x);
-  return { d: 1, q: 'Choose the correct answer:\n' + pre + s[0] + ' ___ ' + v[5] + mk + '.', m, e: 'حدث يحدث الآن ← am/is/are + v-ing: ' + correct + '.', lang: 'en' };
+  const m = mcq(r, correct, [[s[4] ? v[1] : v[0], TX('المضارع البسيط للعادات، أما ') + (pre ? '"' + pre.trim() + '"' : '"' + mk.trim() + '"') + TX(' فتدل على حدث يحدث الآن.')], [wrongBe + ' ' + v[4], TX('فعل be لا يتوافق مع الفاعل: ') + s[0] + ' ← ' + s[1] + '.'], [v[2], TX('هذا ماضٍ بسيط.')]], x => x);
+  return { d: 1, q: 'Choose the correct answer:\n' + pre + s[0] + ' ___ ' + v[5] + mk + '.', m, e: TX('حدث يحدث الآن ← am/is/are + v-ing: ') + correct + '.', lang: 'en' };
 };
 
 T.future_will = r => {
   const v = r.pick(V), s = r.pick(S);
   const mk = r.pick(['tomorrow', 'next week', 'next year', 'next summer', 'in the future']);
-  const m = mcq(r, 'will ' + v[0], [['will ' + v[1], 'بعد will يأتي المصدر دون s.'], [v[2], 'هذا ماضٍ، و"' + mk + '" تدل على المستقبل.'], [s[3] + ' ' + v[3], 'المضارع التام لا يُستخدم مع "' + mk + '".']], x => x);
-  return { d: 1, q: 'Choose the correct answer:\n' + s[0] + ' ___ ' + v[5] + ' ' + mk + '.', m, e: '"' + mk + '" ← will + المصدر: will ' + v[0] + '.', lang: 'en' };
+  const m = mcq(r, 'will ' + v[0], [['will ' + v[1], TX('بعد will يأتي المصدر دون s.')], [v[2], TX('هذا ماضٍ، و"') + mk + TX('" تدل على المستقبل.')], [s[3] + ' ' + v[3], TX('المضارع التام لا يُستخدم مع "') + mk + '".']], x => x);
+  return { d: 1, q: 'Choose the correct answer:\n' + s[0] + ' ___ ' + v[5] + ' ' + mk + '.', m, e: '"' + mk + TX('" ← will + المصدر: will ') + v[0] + '.', lang: 'en' };
 };
 
 T.present_perfect = r => {
@@ -76,15 +76,15 @@ T.present_perfect = r => {
   if (r.chance(0.5)) {
     const v = r.pick(V.filter(x => x[2] !== x[3]));
     const adv = r.pick(['already', 'just', 'never']);
-    const m = mcq(r, v[3], [[v[2], 'بعد have/has نستخدم التصريف الثالث (' + v[3] + ') وليس الثاني.'], [v[0], 'بعد have/has لا يأتي المصدر.'], [v[4], 'v-ing تأتي بعد فعل be وليس بعد have/has في هذا الزمن.']], x => x);
-    return { d: 2, q: 'Choose the correct answer:\n' + s[0] + ' ' + s[3] + ' ' + adv + ' ___ ' + v[5] + '.', m, e: 'have/has + ' + adv + ' + التصريف الثالث: ' + v[3] + '.', lang: 'en' };
+    const m = mcq(r, v[3], [[v[2], TX('بعد have/has نستخدم التصريف الثالث (') + v[3] + TX(') وليس الثاني.')], [v[0], TX('بعد have/has لا يأتي المصدر.')], [v[4], TX('v-ing تأتي بعد فعل be وليس بعد have/has في هذا الزمن.')]], x => x);
+    return { d: 2, q: 'Choose the correct answer:\n' + s[0] + ' ' + s[3] + ' ' + adv + ' ___ ' + v[5] + '.', m, e: 'have/has + ' + adv + TX(' + التصريف الثالث: ') + v[3] + '.', lang: 'en' };
   }
   const v = r.pick(V);
   const mk = r.pick(['since 2020', 'since last year', 'for three years', 'for a long time', 'since January']);
   const correct = s[3] + ' ' + v[3];
   const wrongHave = s[3] === 'has' ? 'have' : 'has';
-  const m = mcq(r, correct, [[v[2], '"' + mk.split(' ')[0] + '" مع مدة مستمرة حتى الآن ← المضارع التام وليس الماضي البسيط.'], [wrongHave + ' ' + v[3], 'have/has لا تتوافق مع الفاعل ' + s[0] + '.'], [s[4] ? v[1] : v[0], 'المضارع البسيط لا يُستخدم مع since/for بهذا المعنى.']], x => x);
-  return { d: 2, q: 'Choose the correct answer:\n' + s[0] + ' ___ ' + v[5] + ' ' + mk + '.', m, e: 'since/for ← have/has + التصريف الثالث: ' + correct + '.', lang: 'en' };
+  const m = mcq(r, correct, [[v[2], '"' + mk.split(' ')[0] + TX('" مع مدة مستمرة حتى الآن ← المضارع التام وليس الماضي البسيط.')], [wrongHave + ' ' + v[3], TX('have/has لا تتوافق مع الفاعل ') + s[0] + '.'], [s[4] ? v[1] : v[0], TX('المضارع البسيط لا يُستخدم مع since/for بهذا المعنى.')]], x => x);
+  return { d: 2, q: 'Choose the correct answer:\n' + s[0] + ' ___ ' + v[5] + ' ' + mk + '.', m, e: TX('since/for ← have/has + التصريف الثالث: ') + correct + '.', lang: 'en' };
 };
 
 T.past_cont = r => {
@@ -92,9 +92,9 @@ T.past_cont = r => {
   const lead = r.pick(['At this time yesterday, ', 'At 8 o\'clock last night, ', 'When the power went out, ']);
   const correct = s[2] + ' ' + v[4];
   const wrong = (s[2] === 'was' ? 'were' : 'was') + ' ' + v[4];
-  const m = mcq(r, correct, [[wrong, 'فعل be في الماضي يتوافق مع الفاعل: المفرد was والجمع/you were.'], [s[1] + ' ' + v[4], 'هذا مضارع مستمر، والجملة في الماضي.'], [s[3] + ' ' + v[3], 'المضارع التام لا يناسب حدثاً كان مستمراً في وقت محدد في الماضي.']], x => x);
+  const m = mcq(r, correct, [[wrong, TX('فعل be في الماضي يتوافق مع الفاعل: المفرد was والجمع/you were.')], [s[1] + ' ' + v[4], TX('هذا مضارع مستمر، والجملة في الماضي.')], [s[3] + ' ' + v[3], TX('المضارع التام لا يناسب حدثاً كان مستمراً في وقت محدد في الماضي.')]], x => x);
   const subj = ['Omar', 'Mona'].includes(s[0]) ? s[0] : s[0].charAt(0).toLowerCase() + s[0].slice(1);
-  return { d: 2, q: 'Choose the correct answer:\n' + lead + subj + ' ___ ' + v[5] + '.', m, e: 'حدث كان مستمراً في وقت محدد في الماضي ← was/were + v-ing: ' + correct + '.', lang: 'en' };
+  return { d: 2, q: 'Choose the correct answer:\n' + lead + subj + ' ___ ' + v[5] + '.', m, e: TX('حدث كان مستمراً في وقت محدد في الماضي ← was/were + v-ing: ') + correct + '.', lang: 'en' };
 };
 
 // object, plural?, verb index, agent
@@ -109,11 +109,11 @@ T.passive = r => {
   const mk = ['yesterday', 'every day', 'tomorrow'][k];
   const be = k === 0 ? (pl ? 'were' : 'was') : k === 1 ? (pl ? 'are' : 'is') : 'will be';
   const correct = be + ' ' + v[3];
-  const ds = [[k === 0 ? v[2] : k === 1 ? (pl ? v[0] : v[1]) : 'will ' + v[0], 'هذا مبني للمعلوم — الفاعل الحقيقي جاء بعد by، فالجملة مبنية للمجهول.'],
-    [k === 2 ? 'will ' + v[3] : (k === 0 ? (pl ? 'was' : 'were') : (pl ? 'is' : 'are')) + ' ' + v[3], k === 2 ? 'المبني للمجهول في المستقبل: will be + التصريف الثالث.' : 'فعل be لا يتوافق مع المفعول المفرد/الجمع.'],
-    [be + ' ' + v[4], 'بعد be في المبني للمجهول نستخدم التصريف الثالث وليس v-ing.']];
+  const ds = [[k === 0 ? v[2] : k === 1 ? (pl ? v[0] : v[1]) : 'will ' + v[0], TX('هذا مبني للمعلوم — الفاعل الحقيقي جاء بعد by، فالجملة مبنية للمجهول.')],
+    [k === 2 ? 'will ' + v[3] : (k === 0 ? (pl ? 'was' : 'were') : (pl ? 'is' : 'are')) + ' ' + v[3], k === 2 ? TX('المبني للمجهول في المستقبل: will be + التصريف الثالث.') : TX('فعل be لا يتوافق مع المفعول المفرد/الجمع.')],
+    [be + ' ' + v[4], TX('بعد be في المبني للمجهول نستخدم التصريف الثالث وليس v-ing.')]];
   const m = mcq(r, correct, ds, x => x);
-  return { d: k === 2 ? 3 : 2, q: 'Choose the correct answer:\n' + obj + ' ___ by ' + ag + ' ' + mk + '.', m, e: 'المبني للمجهول: be (' + be + ') + التصريف الثالث (' + v[3] + ').', lang: 'en' };
+  return { d: k === 2 ? 3 : 2, q: 'Choose the correct answer:\n' + obj + ' ___ by ' + ag + ' ' + mk + '.', m, e: TX('المبني للمجهول: be (') + be + TX(') + التصريف الثالث (') + v[3] + ').', lang: 'en' };
 };
 
 // if-subject, present, past, pp, if-complement, main-subject, main base, main pp, main complement
@@ -131,9 +131,9 @@ T.conditionals = r => {
   const c = r.pick(COND), k = r.int(1, 3);
   const ifv = k === 1 ? c[1] : k === 2 ? (c[2] === 'was' ? 'were' : c[2]) : 'had ' + c[3];
   const forms = { 1: 'will ' + c[6], 2: 'would ' + c[6], 3: 'would have ' + c[7] };
-  const notes = { 1: 'If + مضارع بسيط ← will + مصدر (النوع الأول).', 2: 'If + ماضٍ بسيط ← would + مصدر (النوع الثاني).', 3: 'If + had + p.p ← would have + p.p (النوع الثالث).' };
-  const ds = [1, 2, 3].filter(x => x !== k).map(x => [forms[x], 'هذه صيغة النوع ' + (x === 1 ? 'الأول' : x === 2 ? 'الثاني' : 'الثالث') + '. لاحظ زمن فعل if: ' + notes[k]]);
-  ds.push([k === 3 ? 'had ' + c[7] : c[7], 'الجملة الرئيسية في الشرط تحتاج will/would.']);
+  const notes = { 1: TX('If + مضارع بسيط ← will + مصدر (النوع الأول).'), 2: TX('If + ماضٍ بسيط ← would + مصدر (النوع الثاني).'), 3: TX('If + had + p.p ← would have + p.p (النوع الثالث).') };
+  const ds = [1, 2, 3].filter(x => x !== k).map(x => [forms[x], TX('هذه صيغة النوع ') + (x === 1 ? TX('الأول') : x === 2 ? TX('الثاني') : TX('الثالث')) + TX('. لاحظ زمن فعل if: ') + notes[k]]);
+  ds.push([k === 3 ? 'had ' + c[7] : c[7], TX('الجملة الرئيسية في الشرط تحتاج will/would.')]);
   const m = mcq(r, forms[k], ds, x => x);
   return { d: k === 1 ? 2 : 3, q: 'Choose the correct answer:\nIf ' + c[0] + ' ' + ifv + ' ' + c[4] + ', ' + c[5] + ' ___ ' + c[8] + '.', m, e: notes[k], lang: 'en' };
 };
@@ -153,10 +153,10 @@ function ing(b) { if (b.endsWith('ie')) return b.slice(0, -2) + 'ying'; if (b.en
 T.irregular_verbs = r => {
   const [b, p, pp] = r.pick(IRR), askPP = r.chance(0.5);
   const correct = askPP ? pp : p;
-  const ds = [[regEd(b), 'الفعل "' + b + '" شاذ ولا يأخذ ed.']];
-  if (p !== pp) ds.push([askPP ? p : pp, askPP ? 'هذا التصريف الثاني (الماضي)، والمطلوب التصريف الثالث.' : 'هذا التصريف الثالث (past participle)، والمطلوب الماضي البسيط.']);
-  ds.push([ing(b), 'هذه صيغة v-ing وليست تصريفاً للماضي.']);
-  ds.push([b + 's', 'هذه صيغة المضارع مع he/she/it.']);
+  const ds = [[regEd(b), TX('الفعل "') + b + TX('" شاذ ولا يأخذ ed.')]];
+  if (p !== pp) ds.push([askPP ? p : pp, askPP ? TX('هذا التصريف الثاني (الماضي)، والمطلوب التصريف الثالث.') : TX('هذا التصريف الثالث (past participle)، والمطلوب الماضي البسيط.')]);
+  ds.push([ing(b), TX('هذه صيغة v-ing وليست تصريفاً للماضي.')]);
+  ds.push([b + 's', TX('هذه صيغة المضارع مع he/she/it.')]);
   const m = mcq(r, correct, ds, x => x);
   return { d: p === pp ? 1 : 2, q: 'The ' + (askPP ? 'past participle' : 'past simple') + ' of "' + b + '" is:', m, e: b + ' – ' + p + ' – ' + pp + '.', lang: 'en' };
 };
@@ -175,12 +175,12 @@ const ADJ = [['big', 'bigger', 'biggest', 'double', 'planet', 'in the solar syst
 T.comparatives = r => {
   const [a, c, s, t, n, place] = r.pick(ADJ), sup = r.chance(0.5);
   const naiveC = t === 'long' ? a + 'er' : 'more ' + a, naiveS = t === 'long' ? a + 'est' : 'most ' + a;
-  const noteNaive = t === 'long' ? 'الصفات الطويلة تأخذ more/most ولا تأخذ er/est.' : t === 'irr' ? 'الصفة "' + a + '" شاذة: ' + a + ' – ' + c + ' – ' + s + '.' : 'الصفات القصيرة تأخذ er/est ولا تأخذ more/most.';
+  const noteNaive = t === 'long' ? TX('الصفات الطويلة تأخذ more/most ولا تأخذ er/est.') : t === 'irr' ? TX('الصفة "') + a + TX('" شاذة: ') + a + ' – ' + c + ' – ' + s + '.' : TX('الصفات القصيرة تأخذ er/est ولا تأخذ more/most.');
   if (!sup) {
-    const m = mcq(r, c, [[naiveC, noteNaive], [s, 'هذه صيغة التفضيل العليا (superlative)، ووجود "than" يعني مقارنة بين اثنين.'], [a, 'مع "than" نستخدم صيغة المقارنة.']], x => x);
-    return { d: t === 'irr' || t === 'double' ? 2 : 1, q: 'Choose the correct answer:\nThis ' + n + ' is ___ than that one.', m, e: 'than ← صيغة المقارنة: ' + c + '.', lang: 'en' };
+    const m = mcq(r, c, [[naiveC, noteNaive], [s, TX('هذه صيغة التفضيل العليا (superlative)، ووجود "than" يعني مقارنة بين اثنين.')], [a, TX('مع "than" نستخدم صيغة المقارنة.')]], x => x);
+    return { d: t === 'irr' || t === 'double' ? 2 : 1, q: 'Choose the correct answer:\nThis ' + n + ' is ___ than that one.', m, e: TX('than ← صيغة المقارنة: ') + c + '.', lang: 'en' };
   }
-  const m = mcq(r, s, [[naiveS, noteNaive], [c, 'هذه صيغة المقارنة، و"the ... ' + place + '" تدل على التفضيل الأعلى.'], [a, 'نحتاج صيغة التفضيل العليا مع the.']], x => x);
+  const m = mcq(r, s, [[naiveS, noteNaive], [c, TX('هذه صيغة المقارنة، و"the ... ') + place + TX('" تدل على التفضيل الأعلى.')], [a, TX('نحتاج صيغة التفضيل العليا مع the.')]], x => x);
   return { d: t === 'irr' || t === 'double' ? 2 : 1, q: 'Choose the correct answer:\nIt is the ___ ' + n + ' ' + place + '.', m, e: 'the + superlative: the ' + s + '.', lang: 'en' };
 };
 
@@ -191,44 +191,44 @@ const PL = [['child', 'children'], ['man', 'men'], ['woman', 'women'], ['tooth',
   ['church', 'churches'], ['shelf', 'shelves'], ['family', 'families'], ['wish', 'wishes'], ['fox', 'foxes'], ['star', 'stars'], ['planet', 'planets'], ['class', 'classes']];
 T.plurals = r => {
   const [s, p] = r.pick(PL);
-  const ds = [[s + 's', 'جمع "' + s + '" لا يُكوَّن بإضافة s فقط.'], [s + 'es', 'إضافة es تكون بعد s, sh, ch, x, o.'], [s.endsWith('y') ? s.slice(0, -1) + 'ies' : s.endsWith('f') ? s.slice(0, -1) + 'ves' : s.endsWith('fe') ? s.slice(0, -2) + 'ves' : s + 'ren', 'قاعدة التحويل لا تنطبق على هذه الكلمة.'], [s.endsWith('y') ? s + 'es' : s + 'ses', 'تهجئة غير صحيحة للجمع.']];
+  const ds = [[s + 's', TX('جمع "') + s + TX('" لا يُكوَّن بإضافة s فقط.')], [s + 'es', TX('إضافة es تكون بعد s, sh, ch, x, o.')], [s.endsWith('y') ? s.slice(0, -1) + 'ies' : s.endsWith('f') ? s.slice(0, -1) + 'ves' : s.endsWith('fe') ? s.slice(0, -2) + 'ves' : s + 'ren', TX('قاعدة التحويل لا تنطبق على هذه الكلمة.')], [s.endsWith('y') ? s + 'es' : s + 'ses', TX('تهجئة غير صحيحة للجمع.')]];
   const m = mcq(r, p, ds, x => x);
   return { d: (p === s + 's') ? 1 : 2, q: 'The plural of "' + s + '" is:', m, e: s + ' → ' + p + '.', lang: 'en' };
 };
 
 // word, arabic, synonym, antonym (null = none)
-const VOC = [['huge', 'ضخم', 'enormous', 'tiny'], ['rapid', 'سريع', 'quick', 'slow'], ['begin', 'يبدأ', 'start', 'finish'], ['difficult', 'صعب', 'hard', 'easy'],
-  ['brave', 'شجاع', 'courageous', 'cowardly'], ['ancient', 'قديم جداً', 'old', 'modern'], ['happy', 'سعيد', 'glad', 'sad'], ['clever', 'ذكي', 'intelligent', 'stupid'],
-  ['wealthy', 'ثري', 'rich', 'poor'], ['purchase', 'يشتري', 'buy', 'sell'], ['silent', 'صامت', 'quiet', 'noisy'], ['assist', 'يساعد', 'help', 'hinder'],
-  ['reduce', 'يقلل', 'decrease', 'increase'], ['permit', 'يسمح', 'allow', 'forbid'], ['famous', 'مشهور', 'well-known', 'unknown'], ['strong', 'قوي', 'powerful', 'weak'],
-  ['correct', 'صحيح', 'right', 'wrong'], ['arrive', 'يصل', 'reach', 'leave'], ['gather', 'يجمع', 'collect', 'scatter'], ['obvious', 'واضح', 'clear', 'hidden'],
-  ['precious', 'ثمين', 'valuable', 'worthless'], ['recall', 'يتذكر', 'remember', 'forget'], ['tidy', 'مرتب', 'neat', 'messy'], ['expand', 'يتمدد', 'enlarge', 'shrink'],
-  ['ill', 'مريض', 'sick', 'healthy'], ['vanish', 'يختفي', 'disappear', 'appear'], ['shout', 'يصرخ', 'yell', 'whisper'], ['dangerous', 'خطير', 'risky', 'safe'],
-  ['cheap', 'رخيص', 'inexpensive', 'expensive'], ['empty', 'فارغ', 'vacant', 'full'], ['near', 'قريب', 'close', 'far'], ['wide', 'واسع', 'broad', 'narrow'],
-  ['polite', 'مهذب', 'courteous', 'rude'], ['honest', 'أمين', 'truthful', 'dishonest'], ['victory', 'انتصار', 'triumph', 'defeat'], ['attack', 'يهاجم', 'assault', 'defend'],
-  ['important', 'مهم', 'significant', 'trivial'], ['boring', 'ممل', 'dull', 'exciting'], ['beautiful', 'جميل', 'pretty', 'ugly'], ['shy', 'خجول', 'timid', 'confident'],
-  ['hate', 'يكره', 'detest', 'love'], ['tired', 'متعب', 'exhausted', 'energetic'], ['lazy', 'كسول', 'idle', 'hardworking'], ['raise', 'يرفع', 'lift', 'lower'],
-  ['enter', 'يدخل', null, 'exit'], ['accept', 'يقبل', null, 'refuse'], ['succeed', 'ينجح', null, 'fail'], ['maximum', 'الحد الأقصى', 'highest', 'minimum'],
-  ['inside', 'داخل', null, 'outside'], ['fix', 'يصلح', 'repair', 'break'], ['light', 'خفيف', null, 'heavy'], ['public', 'عام', null, 'private'],
-  ['agree', 'يوافق', null, 'disagree'], ['deep', 'عميق', null, 'shallow'], ['rough', 'خشن', null, 'smooth'], ['permanent', 'دائم', 'lasting', 'temporary'],
-  ['journey', 'رحلة', 'trip', null], ['observe', 'يلاحظ', 'watch', null], ['discover', 'يكتشف', 'find', null],
-  ['protect', 'يحمي', 'guard', null], ['error', 'خطأ', 'mistake', null]];
+const VOC = [['huge', TX('ضخم'), 'enormous', 'tiny'], ['rapid', TX('سريع'), 'quick', 'slow'], ['begin', TX('يبدأ'), 'start', 'finish'], ['difficult', TX('صعب'), 'hard', 'easy'],
+  ['brave', TX('شجاع'), 'courageous', 'cowardly'], ['ancient', TX('قديم جداً'), 'old', 'modern'], ['happy', TX('سعيد'), 'glad', 'sad'], ['clever', TX('ذكي'), 'intelligent', 'stupid'],
+  ['wealthy', TX('ثري'), 'rich', 'poor'], ['purchase', TX('يشتري'), 'buy', 'sell'], ['silent', TX('صامت'), 'quiet', 'noisy'], ['assist', TX('يساعد'), 'help', 'hinder'],
+  ['reduce', TX('يقلل'), 'decrease', 'increase'], ['permit', TX('يسمح'), 'allow', 'forbid'], ['famous', TX('مشهور'), 'well-known', 'unknown'], ['strong', TX('قوي'), 'powerful', 'weak'],
+  ['correct', TX('صحيح'), 'right', 'wrong'], ['arrive', TX('يصل'), 'reach', 'leave'], ['gather', TX('يجمع'), 'collect', 'scatter'], ['obvious', TX('واضح'), 'clear', 'hidden'],
+  ['precious', TX('ثمين'), 'valuable', 'worthless'], ['recall', TX('يتذكر'), 'remember', 'forget'], ['tidy', TX('مرتب'), 'neat', 'messy'], ['expand', TX('يتمدد'), 'enlarge', 'shrink'],
+  ['ill', TX('مريض'), 'sick', 'healthy'], ['vanish', TX('يختفي'), 'disappear', 'appear'], ['shout', TX('يصرخ'), 'yell', 'whisper'], ['dangerous', TX('خطير'), 'risky', 'safe'],
+  ['cheap', TX('رخيص'), 'inexpensive', 'expensive'], ['empty', TX('فارغ'), 'vacant', 'full'], ['near', TX('قريب'), 'close', 'far'], ['wide', TX('واسع'), 'broad', 'narrow'],
+  ['polite', TX('مهذب'), 'courteous', 'rude'], ['honest', TX('أمين'), 'truthful', 'dishonest'], ['victory', TX('انتصار'), 'triumph', 'defeat'], ['attack', TX('يهاجم'), 'assault', 'defend'],
+  ['important', TX('مهم'), 'significant', 'trivial'], ['boring', TX('ممل'), 'dull', 'exciting'], ['beautiful', TX('جميل'), 'pretty', 'ugly'], ['shy', TX('خجول'), 'timid', 'confident'],
+  ['hate', TX('يكره'), 'detest', 'love'], ['tired', TX('متعب'), 'exhausted', 'energetic'], ['lazy', TX('كسول'), 'idle', 'hardworking'], ['raise', TX('يرفع'), 'lift', 'lower'],
+  ['enter', TX('يدخل'), null, 'exit'], ['accept', TX('يقبل'), null, 'refuse'], ['succeed', TX('ينجح'), null, 'fail'], ['maximum', TX('الحد الأقصى'), 'highest', 'minimum'],
+  ['inside', TX('داخل'), null, 'outside'], ['fix', TX('يصلح'), 'repair', 'break'], ['light', TX('خفيف'), null, 'heavy'], ['public', TX('عام'), null, 'private'],
+  ['agree', TX('يوافق'), null, 'disagree'], ['deep', TX('عميق'), null, 'shallow'], ['rough', TX('خشن'), null, 'smooth'], ['permanent', TX('دائم'), 'lasting', 'temporary'],
+  ['journey', TX('رحلة'), 'trip', null], ['observe', TX('يلاحظ'), 'watch', null], ['discover', TX('يكتشف'), 'find', null],
+  ['protect', TX('يحمي'), 'guard', null], ['error', TX('خطأ'), 'mistake', null]];
 const AR_OF = {}; VOC.forEach(([w, ar, s, a]) => { AR_OF[w] = AR_OF[w] || ar; });
 T.vocab = r => {
   const e = r.pick(VOC), [w, ar, syn, ant] = e;
-  const kind = r.pick(['syn', 'ant', 'mean'].filter(k => (k !== 'syn' || syn) && (k !== 'ant' || ant)));
+  const kind = r.pick(['syn', 'ant', 'mean'].filter(k => (k !== 'syn' || syn) && (k !== 'ant' || ant) && (k !== 'mean' || global.__UI !== 'en')));
   const others = VOC.filter(x => x[0] !== w && x[1] !== ar && x[2] !== syn);
   if (kind === 'mean') {
     const pool = r.shuffle(others).filter(x => x[1] !== ar).slice(0, 6);
-    const m = mcq(r, ar, pool.map(x => [x[1], '«' + x[1] + '» هي معنى كلمة "' + x[0] + '".']), x => x);
+    const m = mcq(r, ar, pool.map(x => [x[1], '«' + x[1] + TX('» هي معنى كلمة "') + x[0] + '".']), x => x);
     return { tag: 'vocab_syn', d: 1, q: 'The meaning of "' + w + '" is:', m, e: '"' + w + '" = ' + ar + '.', lang: 'en' };
   }
   const correct = kind === 'syn' ? syn : ant;
   const pool = r.shuffle(others).slice(0, 8).map(x => x[0]).filter(x => x !== correct && x !== w && x !== syn && x !== ant);
   const opp = kind === 'syn' ? ant : syn;
   const ds = [];
-  if (opp) ds.push([opp, kind === 'syn' ? '"' + opp + '" عكس "' + w + '" وليست مرادفاً لها.' : '"' + opp + '" مرادف لـ "' + w + '" وليست عكسها.']);
-  pool.forEach(p => ds.push([p, '"' + p + '" تعني «' + AR_OF[p] + '» ولا علاقة لها بمعنى "' + w + '" (' + ar + ').']));
+  if (opp) ds.push([opp, kind === 'syn' ? '"' + opp + TX('" عكس "') + w + TX('" وليست مرادفاً لها.') : '"' + opp + TX('" مرادف لـ "') + w + TX('" وليست عكسها.')]);
+  pool.forEach(p => ds.push([p, '"' + p + TX('" تعني «') + AR_OF[p] + TX('» ولا علاقة لها بمعنى "') + w + '" (' + ar + ').']));
   const m = mcq(r, correct, ds, x => x);
   return { tag: kind === 'syn' ? 'vocab_syn' : 'vocab_ant', d: 2, q: 'Choose the ' + (kind === 'syn' ? 'synonym' : 'opposite') + ' of "' + w + '":', m, e: '"' + w + '" (' + ar + ') — ' + (kind === 'syn' ? 'synonym' : 'opposite') + ': ' + correct + '.', lang: 'en' };
 };
@@ -250,32 +250,32 @@ T.relative_clauses = r => {
   else if (k === 'which') q = 'The ' + r.pick(REL_T) + ' ___ ' + r.pick(REL_TP) + '.';
   else if (k === 'where') q = 'The ' + r.pick(REL_PL) + ' ___ ' + r.pick(REL_PLP) + '.';
   else q = 'The ' + r.pick(REL_W) + ' ___ ' + r.pick(REL_WI) + ' was stolen is very upset.';
-  const why = { who: 'who تُستخدم للعاقل (شخص) ويأتي بعدها فعل.', which: 'which تُستخدم لغير العاقل (شيء).', where: 'where تُستخدم للمكان.', whose: 'whose تدل على الملكية ويأتي بعدها اسم.' };
-  const ds = ['who', 'which', 'where', 'whose'].filter(x => x !== k).map(x => [x, '"' + x + '" لا تناسب هنا. ' + why[k].replace(/^\w+ /, k + ' ')]);
+  const why = { who: TX('who تُستخدم للعاقل (شخص) ويأتي بعدها فعل.'), which: TX('which تُستخدم لغير العاقل (شيء).'), where: TX('where تُستخدم للمكان.'), whose: TX('whose تدل على الملكية ويأتي بعدها اسم.') };
+  const ds = ['who', 'which', 'where', 'whose'].filter(x => x !== k).map(x => [x, '"' + x + TX('" لا تناسب هنا. ') + why[k].replace(/^\w+ /, k + ' ')]);
   const m = mcq(r, k, ds, x => x);
   return { d: k === 'whose' ? 2 : 1, q: 'Choose the correct relative pronoun:\n' + q, m, e: why[k], lang: 'en' };
 };
 
 const MOD = [
-  ['You ___ smoke in the hospital. It is forbidden.', "mustn't", [["don't have to", 'don\'t have to تعني "غير مضطر" وليس "ممنوع".'], ['can', 'can تعني القدرة أو السماح، والمقصود هنا المنع.'], ['might', 'might تعبر عن احتمال وليس منعاً.']], 'ممنوع ← mustn\'t.', 1],
-  ['Students ___ run in the corridors. The school rules do not allow it.', "mustn't", [["don't have to", 'don\'t have to = ليس ضرورياً، لكنه هنا ممنوع.'], ['may', 'may للسماح أو الاحتمال.'], ['could', 'could للقدرة في الماضي أو الاقتراح.']], 'القواعد تمنع ← mustn\'t.', 1],
-  ['Tomorrow is a holiday, so we ___ go to school.', "don't have to", [["mustn't", 'mustn\'t = ممنوع، والمقصود غير مضطرين.'], ['must', 'must = إلزام وهذا عكس المعنى.'], ['should', 'should = نصيحة، والسياق يدل على عدم الضرورة.']], 'العطلة تعني عدم الضرورة ← don\'t have to.', 1],
-  ['You ___ bring a pen. The school will give you one.', "don't have to", [["mustn't", 'mustn\'t = ممنوع، والمقصود عدم الضرورة.'], ['must', 'must = إلزام، لكن المدرسة ستعطيك قلماً.'], ['can\'t', 'can\'t = لا يمكن، وليس هذا المعنى.']], 'غير ضروري ← don\'t have to.', 1],
-  ["I'm sure he ___ be at home. I saw his car outside.", 'must', [["can't", 'can\'t للاستنتاج النفي (متأكد أنه ليس هناك).'], ["mustn't", 'mustn\'t للمنع وليس للاستنتاج.'], ['should', 'should للنصيحة.']], 'استنتاج قوي إيجابي ← must.', 2],
-  ["He is in London this week, so he ___ be at the party tonight.", "can't", [['must', 'must استنتاج إيجابي، والدليل هنا ينفي وجوده.'], ['should', 'should للنصيحة.'], ['may', 'may احتمال ضعيف وليس نفياً قاطعاً.']], 'استنتاج نفي قوي ← can\'t.', 2],
-  ['When I was five, I ___ swim.', 'could', [['can', 'can للحاضر، والجملة في الماضي (when I was five).'], ['must', 'must للإلزام.'], ['will', 'will للمستقبل.']], 'قدرة في الماضي ← could.', 1],
-  ['When she was young, she ___ run very fast.', 'could', [['can', 'can للحاضر.'], ['should', 'should للنصيحة.'], ['must', 'must للإلزام.']], 'قدرة في الماضي ← could.', 1],
-  ['You look very tired. You ___ go to bed early.', 'should', [["shouldn't", 'shouldn\'t عكس النصيحة المطلوبة.'], ["mustn't", 'mustn\'t للمنع.'], ["can't", 'can\'t للاستنتاج النفي.']], 'نصيحة ← should.', 1],
-  ['It is bad for your health, so you ___ eat so much sugar.', "shouldn't", [['should', 'should نصيحة بفعل الشيء، والمقصود النصح بتركه.'], ['must', 'must للإلزام.'], ['can', 'can للقدرة.']], 'نصيحة بالامتناع ← shouldn\'t.', 1],
-  ['Visitors ___ touch the paintings in the museum. It is against the rules.', "mustn't", [["don't have to", 'don\'t have to = ليس ضرورياً، لكنه هنا ممنوع.'], ['can', 'can لا تعبر عن المنع هنا.'], ['should', 'should نصيحة وليست منعاً.']], 'ممنوع ← mustn\'t.', 1],
-  ['The ticket is free, so you ___ pay anything.', "don't have to", [["mustn't", 'mustn\'t = ممنوع، والمقصود عدم الضرورة.'], ['must', 'must = إلزام.'], ['can\'t', 'can\'t = لا يمكنك.']], 'مجاني ← don\'t have to.', 1],
-  ["The lab lights are off and the door is locked. Nobody ___ be inside.", "can't", [['must', 'must استنتاج إيجابي والدليل ينفي وجود أحد.'], ['should', 'should للنصيحة.'], ['could', 'could احتمال وليس نفياً قاطعاً.']], 'استنتاج نفي ← can\'t.', 2],
-  ['She has been studying all night. She ___ be very tired.', 'must', [["can't", 'can\'t استنتاج نفي.'], ["mustn't", 'mustn\'t للمنع.'], ["shouldn't", 'shouldn\'t نصيحة بالامتناع.']], 'استنتاج قوي ← must.', 2],
-  ['You ___ wear a seat belt. It is the law.', 'must', [["mustn't", 'mustn\'t تعني ممنوع، والمقصود إلزام.'], ["don't have to", 'don\'t have to = غير ضروري، لكنه قانون.'], ['can', 'can لا تعبر عن الإلزام.']], 'قانون ← must.', 1],
-  ['Our grandfather ___ ride a horse when he was young, but now he cannot.', 'could', [['can', 'can للحاضر.'], ['must', 'must للإلزام.'], ['should', 'should للنصيحة.']], 'قدرة في الماضي ← could.', 1],
-  ['You ___ drink more water. It is good for you.', 'should', [["shouldn't", 'shouldn\'t عكس النصيحة.'], ["mustn't", 'mustn\'t للمنع.'], ["can't", 'can\'t استنتاج نفي.']], 'نصيحة ← should.', 1],
-  ['___ I come in, sir?', 'May', [['Must', 'must للإلزام.'], ['Should', 'should للنصيحة.'], ['Mustn\'t', 'mustn\'t للمنع.']], 'طلب إذن مهذب ← May.', 1],
-  ['___ I borrow your pen, please?', 'May', [['Must', 'must للإلزام ولا يُستخدم في طلب الإذن.'], ['Should', 'should للنصيحة.'], ['Would', 'would لا تأتي بهذا الشكل مع I في طلب الإذن.']], 'طلب إذن مهذب ← May.', 1]
+  ['You ___ smoke in the hospital. It is forbidden.', "mustn't", [["don't have to", TX('don\'t have to تعني "غير مضطر" وليس "ممنوع".')], ['can', TX('can تعني القدرة أو السماح، والمقصود هنا المنع.')], ['might', TX('might تعبر عن احتمال وليس منعاً.')]], TX('ممنوع ← mustn\'t.'), 1],
+  ['Students ___ run in the corridors. The school rules do not allow it.', "mustn't", [["don't have to", TX('don\'t have to = ليس ضرورياً، لكنه هنا ممنوع.')], ['may', TX('may للسماح أو الاحتمال.')], ['could', TX('could للقدرة في الماضي أو الاقتراح.')]], TX('القواعد تمنع ← mustn\'t.'), 1],
+  ['Tomorrow is a holiday, so we ___ go to school.', "don't have to", [["mustn't", TX('mustn\'t = ممنوع، والمقصود غير مضطرين.')], ['must', TX('must = إلزام وهذا عكس المعنى.')], ['should', TX('should = نصيحة، والسياق يدل على عدم الضرورة.')]], TX('العطلة تعني عدم الضرورة ← don\'t have to.'), 1],
+  ['You ___ bring a pen. The school will give you one.', "don't have to", [["mustn't", TX('mustn\'t = ممنوع، والمقصود عدم الضرورة.')], ['must', TX('must = إلزام، لكن المدرسة ستعطيك قلماً.')], ['can\'t', TX('can\'t = لا يمكن، وليس هذا المعنى.')]], TX('غير ضروري ← don\'t have to.'), 1],
+  ["I'm sure he ___ be at home. I saw his car outside.", 'must', [["can't", TX('can\'t للاستنتاج النفي (متأكد أنه ليس هناك).')], ["mustn't", TX('mustn\'t للمنع وليس للاستنتاج.')], ['should', TX('should للنصيحة.')]], TX('استنتاج قوي إيجابي ← must.'), 2],
+  ["He is in London this week, so he ___ be at the party tonight.", "can't", [['must', TX('must استنتاج إيجابي، والدليل هنا ينفي وجوده.')], ['should', TX('should للنصيحة.')], ['may', TX('may احتمال ضعيف وليس نفياً قاطعاً.')]], TX('استنتاج نفي قوي ← can\'t.'), 2],
+  ['When I was five, I ___ swim.', 'could', [['can', TX('can للحاضر، والجملة في الماضي (when I was five).')], ['must', TX('must للإلزام.')], ['will', TX('will للمستقبل.')]], TX('قدرة في الماضي ← could.'), 1],
+  ['When she was young, she ___ run very fast.', 'could', [['can', TX('can للحاضر.')], ['should', TX('should للنصيحة.')], ['must', TX('must للإلزام.')]], TX('قدرة في الماضي ← could.'), 1],
+  ['You look very tired. You ___ go to bed early.', 'should', [["shouldn't", TX('shouldn\'t عكس النصيحة المطلوبة.')], ["mustn't", TX('mustn\'t للمنع.')], ["can't", TX('can\'t للاستنتاج النفي.')]], TX('نصيحة ← should.'), 1],
+  ['It is bad for your health, so you ___ eat so much sugar.', "shouldn't", [['should', TX('should نصيحة بفعل الشيء، والمقصود النصح بتركه.')], ['must', TX('must للإلزام.')], ['can', TX('can للقدرة.')]], TX('نصيحة بالامتناع ← shouldn\'t.'), 1],
+  ['Visitors ___ touch the paintings in the museum. It is against the rules.', "mustn't", [["don't have to", TX('don\'t have to = ليس ضرورياً، لكنه هنا ممنوع.')], ['can', TX('can لا تعبر عن المنع هنا.')], ['should', TX('should نصيحة وليست منعاً.')]], TX('ممنوع ← mustn\'t.'), 1],
+  ['The ticket is free, so you ___ pay anything.', "don't have to", [["mustn't", TX('mustn\'t = ممنوع، والمقصود عدم الضرورة.')], ['must', TX('must = إلزام.')], ['can\'t', TX('can\'t = لا يمكنك.')]], TX('مجاني ← don\'t have to.'), 1],
+  ["The lab lights are off and the door is locked. Nobody ___ be inside.", "can't", [['must', TX('must استنتاج إيجابي والدليل ينفي وجود أحد.')], ['should', TX('should للنصيحة.')], ['could', TX('could احتمال وليس نفياً قاطعاً.')]], TX('استنتاج نفي ← can\'t.'), 2],
+  ['She has been studying all night. She ___ be very tired.', 'must', [["can't", TX('can\'t استنتاج نفي.')], ["mustn't", TX('mustn\'t للمنع.')], ["shouldn't", TX('shouldn\'t نصيحة بالامتناع.')]], TX('استنتاج قوي ← must.'), 2],
+  ['You ___ wear a seat belt. It is the law.', 'must', [["mustn't", TX('mustn\'t تعني ممنوع، والمقصود إلزام.')], ["don't have to", TX('don\'t have to = غير ضروري، لكنه قانون.')], ['can', TX('can لا تعبر عن الإلزام.')]], TX('قانون ← must.'), 1],
+  ['Our grandfather ___ ride a horse when he was young, but now he cannot.', 'could', [['can', TX('can للحاضر.')], ['must', TX('must للإلزام.')], ['should', TX('should للنصيحة.')]], TX('قدرة في الماضي ← could.'), 1],
+  ['You ___ drink more water. It is good for you.', 'should', [["shouldn't", TX('shouldn\'t عكس النصيحة.')], ["mustn't", TX('mustn\'t للمنع.')], ["can't", TX('can\'t استنتاج نفي.')]], TX('نصيحة ← should.'), 1],
+  ['___ I come in, sir?', 'May', [['Must', TX('must للإلزام.')], ['Should', TX('should للنصيحة.')], ['Mustn\'t', TX('mustn\'t للمنع.')]], TX('طلب إذن مهذب ← May.'), 1],
+  ['___ I borrow your pen, please?', 'May', [['Must', TX('must للإلزام ولا يُستخدم في طلب الإذن.')], ['Should', TX('should للنصيحة.')], ['Would', TX('would لا تأتي بهذا الشكل مع I في طلب الإذن.')]], TX('طلب إذن مهذب ← May.'), 1]
 ];
 T.modals = r => {
   const [q, a, ds, e, d] = r.pick(MOD);
@@ -285,27 +285,27 @@ T.modals = r => {
 
 const RS_SUBJ = [['Omar', 'he', 'his'], ['Mona', 'she', 'her'], ['My brother', 'he', 'his'], ['The teacher', 'she', 'her'], ['The engineer', 'he', 'his'], ['Salma', 'she', 'her']];
 // [direct speech, correct reported verb phrase, [wrong, note] x3]   ({p} = his/her)
-const NOSHIFT = 'لم يتم إرجاع الزمن خطوة للوراء بعد فعل التقرير الماضي (said).';
+const NOSHIFT = TX('لم يتم إرجاع الزمن خطوة للوراء بعد فعل التقرير الماضي (said).');
 const RS_ITEMS = [
-  ['"I like physics."', 'liked physics', [['likes physics', NOSHIFT], ['had liked physics', 'had liked = past perfect لا تناسب مضارعاً بسيطاً.'], ['will like physics', 'will للمستقبل.']], 'المضارع البسيط ← الماضي البسيط', 2],
-  ['"I study every night."', 'studied every night', [['studies every night', NOSHIFT], ['had studied every night', 'past perfect لا تناسب مضارعاً بسيطاً.'], ['was studying every night', 'المستمر لا يناسب عادة متكررة.']], 'المضارع البسيط ← الماضي البسيط', 2],
-  ['"I live near the school."', 'lived near the school', [['lives near the school', NOSHIFT], ['had lived near the school', 'past perfect لا تناسب مضارعاً بسيطاً.'], ['will live near the school', 'will للمستقبل.']], 'المضارع البسيط ← الماضي البسيط', 2],
-  ['"I need a new laptop."', 'needed a new laptop', [['needs a new laptop', NOSHIFT], ['had needed a new laptop', 'past perfect لا تناسب مضارعاً بسيطاً.'], ['will need a new laptop', 'will للمستقبل.']], 'المضارع البسيط ← الماضي البسيط', 2],
-  ['"I am reading a science book."', 'was reading a science book', [['is reading a science book', NOSHIFT], ['has read a science book', 'المضارع التام لا يناسب المستمر.'], ['reads a science book', NOSHIFT]], 'المضارع المستمر ← الماضي المستمر', 3],
-  ['"I am working on a project."', 'was working on a project', [['is working on a project', NOSHIFT], ['had worked on a project', 'past perfect تغيّر المعنى من مستمر إلى منتهٍ.'], ['works on a project', NOSHIFT]], 'المضارع المستمر ← الماضي المستمر', 3],
-  ['"I will visit the museum."', 'would visit the museum', [['will visit the museum', 'will تصبح would بعد فعل ماضٍ.'], ['would to visit the museum', 'بعد would يأتي المصدر بدون to.'], ['visited the museum', 'would ضرورية للتعبير عن المستقبل في الماضي.']], 'will ← would', 2],
-  ['"I will send the report."', 'would send the report', [['will send the report', 'will تصبح would بعد فعل ماضٍ.'], ['would sent the report', 'بعد would يأتي المصدر وليس الماضي.'], ['sent the report', 'would ضرورية للتعبير عن المستقبل في الماضي.']], 'will ← would', 2],
-  ['"I can solve this problem."', 'could solve that problem', [['can solve this problem', 'can تصبح could و this تصبح that.'], ['could solve this problem', 'this تصبح that في الكلام غير المباشر.'], ['can solve that problem', 'can تصبح could.']], 'can ← could', 3],
-  ['"I can speak three languages."', 'could speak three languages', [['can speak three languages', 'can تصبح could.'], ['would speak three languages', 'would ليست ماضي can.'], ['could spoke three languages', 'بعد could يأتي المصدر.']], 'can ← could', 2],
-  ['"I have finished my homework."', 'had finished {p} homework', [['has finished {p} homework', NOSHIFT], ['finished {p} homework', 'نحتاج past perfect (had + p.p) وليس الماضي البسيط.'], ['will have finished {p} homework', 'will have للمستقبل التام.']], 'المضارع التام ← past perfect', 3],
-  ['"I have never seen the sea."', 'had never seen the sea', [['has never seen the sea', NOSHIFT], ['never saw the sea', 'نحتاج past perfect (had + p.p).'], ['will never see the sea', 'will للمستقبل.']], 'المضارع التام ← past perfect', 3],
-  ['"I play chess every week."', 'played chess every week', [['plays chess every week', NOSHIFT], ['had played chess every week', 'past perfect لا تناسب مضارعاً بسيطاً.'], ['will play chess every week', 'will للمستقبل.']], 'المضارع البسيط ← الماضي البسيط', 2],
-  ['"I enjoy science lessons."', 'enjoyed science lessons', [['enjoys science lessons', NOSHIFT], ['had enjoyed science lessons', 'past perfect لا تناسب مضارعاً بسيطاً.'], ['will enjoy science lessons', 'will للمستقبل.']], 'المضارع البسيط ← الماضي البسيط', 2],
-  ['"I am studying for the exam."', 'was studying for the exam', [['is studying for the exam', NOSHIFT], ['had studied for the exam', 'past perfect تغيّر المعنى.'], ['studies for the exam', NOSHIFT]], 'المضارع المستمر ← الماضي المستمر', 3],
-  ['"I will join the science club."', 'would join the science club', [['will join the science club', 'will تصبح would بعد فعل ماضٍ.'], ['would joined the science club', 'بعد would يأتي المصدر.'], ['joined the science club', 'would ضرورية للتعبير عن المستقبل في الماضي.']], 'will ← would', 2],
-  ['"I have lost my keys."', 'had lost {p} keys', [['has lost {p} keys', NOSHIFT], ['lost {p} keys', 'نحتاج past perfect (had + p.p).'], ['will have lost {p} keys', 'will have للمستقبل التام.']], 'المضارع التام ← past perfect', 3],
-  ['"I can see the stars clearly."', 'could see the stars clearly', [['can see the stars clearly', 'can تصبح could.'], ['would see the stars clearly', 'would ليست ماضي can.'], ['could saw the stars clearly', 'بعد could يأتي المصدر.']], 'can ← could', 2],
-  ['"I visited the lab yesterday."', 'had visited the lab the day before', [['visited the lab yesterday', 'الماضي البسيط يصبح past perfect، و yesterday تصبح the day before.'], ['had visited the lab yesterday', 'yesterday تتحول إلى the day before.'], ['visited the lab the day before', 'الفعل يحتاج had + p.p أيضاً.']], 'الماضي البسيط ← past perfect', 3]
+  ['"I like physics."', 'liked physics', [['likes physics', NOSHIFT], ['had liked physics', TX('had liked = past perfect لا تناسب مضارعاً بسيطاً.')], ['will like physics', TX('will للمستقبل.')]], TX('المضارع البسيط ← الماضي البسيط'), 2],
+  ['"I study every night."', 'studied every night', [['studies every night', NOSHIFT], ['had studied every night', TX('past perfect لا تناسب مضارعاً بسيطاً.')], ['was studying every night', TX('المستمر لا يناسب عادة متكررة.')]], TX('المضارع البسيط ← الماضي البسيط'), 2],
+  ['"I live near the school."', 'lived near the school', [['lives near the school', NOSHIFT], ['had lived near the school', TX('past perfect لا تناسب مضارعاً بسيطاً.')], ['will live near the school', TX('will للمستقبل.')]], TX('المضارع البسيط ← الماضي البسيط'), 2],
+  ['"I need a new laptop."', 'needed a new laptop', [['needs a new laptop', NOSHIFT], ['had needed a new laptop', TX('past perfect لا تناسب مضارعاً بسيطاً.')], ['will need a new laptop', TX('will للمستقبل.')]], TX('المضارع البسيط ← الماضي البسيط'), 2],
+  ['"I am reading a science book."', 'was reading a science book', [['is reading a science book', NOSHIFT], ['has read a science book', TX('المضارع التام لا يناسب المستمر.')], ['reads a science book', NOSHIFT]], TX('المضارع المستمر ← الماضي المستمر'), 3],
+  ['"I am working on a project."', 'was working on a project', [['is working on a project', NOSHIFT], ['had worked on a project', TX('past perfect تغيّر المعنى من مستمر إلى منتهٍ.')], ['works on a project', NOSHIFT]], TX('المضارع المستمر ← الماضي المستمر'), 3],
+  ['"I will visit the museum."', 'would visit the museum', [['will visit the museum', TX('will تصبح would بعد فعل ماضٍ.')], ['would to visit the museum', TX('بعد would يأتي المصدر بدون to.')], ['visited the museum', TX('would ضرورية للتعبير عن المستقبل في الماضي.')]], 'will ← would', 2],
+  ['"I will send the report."', 'would send the report', [['will send the report', TX('will تصبح would بعد فعل ماضٍ.')], ['would sent the report', TX('بعد would يأتي المصدر وليس الماضي.')], ['sent the report', TX('would ضرورية للتعبير عن المستقبل في الماضي.')]], 'will ← would', 2],
+  ['"I can solve this problem."', 'could solve that problem', [['can solve this problem', TX('can تصبح could و this تصبح that.')], ['could solve this problem', TX('this تصبح that في الكلام غير المباشر.')], ['can solve that problem', TX('can تصبح could.')]], 'can ← could', 3],
+  ['"I can speak three languages."', 'could speak three languages', [['can speak three languages', TX('can تصبح could.')], ['would speak three languages', TX('would ليست ماضي can.')], ['could spoke three languages', TX('بعد could يأتي المصدر.')]], 'can ← could', 2],
+  ['"I have finished my homework."', 'had finished {p} homework', [['has finished {p} homework', NOSHIFT], ['finished {p} homework', TX('نحتاج past perfect (had + p.p) وليس الماضي البسيط.')], ['will have finished {p} homework', TX('will have للمستقبل التام.')]], TX('المضارع التام ← past perfect'), 3],
+  ['"I have never seen the sea."', 'had never seen the sea', [['has never seen the sea', NOSHIFT], ['never saw the sea', TX('نحتاج past perfect (had + p.p).')], ['will never see the sea', TX('will للمستقبل.')]], TX('المضارع التام ← past perfect'), 3],
+  ['"I play chess every week."', 'played chess every week', [['plays chess every week', NOSHIFT], ['had played chess every week', TX('past perfect لا تناسب مضارعاً بسيطاً.')], ['will play chess every week', TX('will للمستقبل.')]], TX('المضارع البسيط ← الماضي البسيط'), 2],
+  ['"I enjoy science lessons."', 'enjoyed science lessons', [['enjoys science lessons', NOSHIFT], ['had enjoyed science lessons', TX('past perfect لا تناسب مضارعاً بسيطاً.')], ['will enjoy science lessons', TX('will للمستقبل.')]], TX('المضارع البسيط ← الماضي البسيط'), 2],
+  ['"I am studying for the exam."', 'was studying for the exam', [['is studying for the exam', NOSHIFT], ['had studied for the exam', TX('past perfect تغيّر المعنى.')], ['studies for the exam', NOSHIFT]], TX('المضارع المستمر ← الماضي المستمر'), 3],
+  ['"I will join the science club."', 'would join the science club', [['will join the science club', TX('will تصبح would بعد فعل ماضٍ.')], ['would joined the science club', TX('بعد would يأتي المصدر.')], ['joined the science club', TX('would ضرورية للتعبير عن المستقبل في الماضي.')]], 'will ← would', 2],
+  ['"I have lost my keys."', 'had lost {p} keys', [['has lost {p} keys', NOSHIFT], ['lost {p} keys', TX('نحتاج past perfect (had + p.p).')], ['will have lost {p} keys', TX('will have للمستقبل التام.')]], TX('المضارع التام ← past perfect'), 3],
+  ['"I can see the stars clearly."', 'could see the stars clearly', [['can see the stars clearly', TX('can تصبح could.')], ['would see the stars clearly', TX('would ليست ماضي can.')], ['could saw the stars clearly', TX('بعد could يأتي المصدر.')]], 'can ← could', 2],
+  ['"I visited the lab yesterday."', 'had visited the lab the day before', [['visited the lab yesterday', TX('الماضي البسيط يصبح past perfect، و yesterday تصبح the day before.')], ['had visited the lab yesterday', TX('yesterday تتحول إلى the day before.')], ['visited the lab the day before', TX('الفعل يحتاج had + p.p أيضاً.')]], TX('الماضي البسيط ← past perfect'), 3]
 ];
 T.reported_speech = r => {
   const [sj, pr, pos] = r.pick(RS_SUBJ), it = r.pick(RS_ITEMS), f = x => x.replace('{p}', pos);
@@ -323,10 +323,10 @@ T.gerund_inf = r => {
   const verb = form ? t3 : b3, subj = form ? s : r.pick(['I', 'We', 'They', 'You']);
   const correct = g ? ing : 'to ' + base;
   const past = base.endsWith('e') ? base + 'd' : (/[^aeiou]y$/.test(base) ? base.slice(0, -1) + 'ied' : base + 'ed');
-  const ds = g ? [['to ' + base, 'بعد ' + b3 + ' نستخدم v-ing وليس to + مصدر.'], [base, 'بعد ' + b3 + ' لا يأتي المصدر مجرداً، بل v-ing.'], ['to ' + ing, 'to لا تأتي مع v-ing هنا.']]
-    : [[ing, 'بعد ' + b3 + ' نستخدم to + مصدر وليس v-ing.'], [base, 'بعد ' + b3 + ' نحتاج to قبل المصدر.'], [past, 'لا نستخدم الماضي بعد ' + b3 + '.']];
+  const ds = g ? [['to ' + base, TX('بعد ') + b3 + TX(' نستخدم v-ing وليس to + مصدر.')], [base, TX('بعد ') + b3 + TX(' لا يأتي المصدر مجرداً، بل v-ing.')], ['to ' + ing, TX('to لا تأتي مع v-ing هنا.')]]
+    : [[ing, TX('بعد ') + b3 + TX(' نستخدم to + مصدر وليس v-ing.')], [base, TX('بعد ') + b3 + TX(' نحتاج to قبل المصدر.')], [past, TX('لا نستخدم الماضي بعد ') + b3 + '.']];
   const m = mcq(r, correct, ds, x => x);
-  return { d: 1, q: 'Choose the correct answer:\n' + subj + ' ' + verb + ' ___ ' + obj + '.', m, e: g ? b3 + ' + v-ing: ' + ing + '.' : b3 + ' + to + مصدر: to ' + base + '.', lang: 'en' };
+  return { d: 1, q: 'Choose the correct answer:\n' + subj + ' ' + verb + ' ___ ' + obj + '.', m, e: g ? b3 + ' + v-ing: ' + ing + '.' : b3 + TX(' + to + مصدر: to ') + base + '.', lang: 'en' };
 };
 
 Object.defineProperty(T, '__data', { value: { V, S, IRR, ADJ, PL, VOC }, enumerable: false });

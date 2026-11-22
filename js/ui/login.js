@@ -25,7 +25,7 @@
         '<div class="hero-board"><h4><span>' + t('topAcademy') + '</span><button class="linkbtn" id="lb-share" style="color:#fff" aria-label="share">' + U.icon('share', 16) + '</button></h4><div id="lb-list"><div class="small" style="opacity:.8;padding:8px 0">…</div></div></div>' +
       '</div>' +
       '<div class="auth-panel"><div class="auth-box">' +
-        '<div class="auth-top">' + U.logo() + langPill() + '</div>' +
+        '<div class="auth-top">' + U.logo() + '<span class="row" style="gap:6px">' + U.theme.button('theme-auth') + langPill() + '</span></div>' +
         '<h2>' + (up ? t('createTitle') : t('welcomeBack')) + '</h2><p class="sub">' + (up ? t('createSub') : t('welcomeSub')) + '</p>' +
         '<div class="seg" style="width:100%;margin-bottom:18px"><button type="button" data-m="signin" class="' + (!up ? 'on' : '') + '" style="flex:1">' + t('signIn') + '</button><button type="button" data-m="signup" class="' + (up ? 'on' : '') + '" style="flex:1">' + t('signUp') + '</button></div>' +
         '<form id="authf" class="stack" novalidate autocomplete="on">' +
@@ -42,6 +42,7 @@
         '<p class="auth-foot"><span class="chip ' + (api.mode === 'online' ? 'green' : 'amber') + '">' + (api.mode === 'online' ? '● ' + t('online') : '● ' + t('offline')) + ' · ' + t('questionsCount', { n: U.fmt(api.info.questions) }) + '</span></p>' +
       '</div></div>';
 
+    U.theme.wire('theme-auth');
     U.$$('[data-l]').forEach(function (b) { b.onclick = function () { OA.I18N.set(b.dataset.l); render(); }; });
     U.$$('[data-m]').forEach(function (b) { b.onclick = function () { st.mode = b.dataset.m; render(); }; });
     U.$$('#role button').forEach(function (b) { b.onclick = function () { st.role = b.dataset.r; render(); }; });

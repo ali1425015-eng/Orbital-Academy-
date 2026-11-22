@@ -14,7 +14,7 @@
         '<select class="input" id="t-grade">' + C.GRADES.map(function (g) { return '<option value="' + g + '">' + U.gradeName(g) + '</option>'; }).join('') + '<option value="0">' + U.gradeName(0) + '</option></select>' +
         '<select class="input" id="t-subj"></select><button class="btn" id="t-fetch">' + U.icon('refresh', 16) + t('random5') + '</button><div id="t-qs" class="stack"></div></div></section>' +
         '<div class="tipcard"><span style="font-size:1.3rem">👩‍🏫</span><p class="small ink2">' + t('teacherHint') + '</p></div></aside></div>';
-    function subjOpts() { var g = +U.$('#t-grade').value; U.$('#t-subj').innerHTML = C.subjectsFor(g).map(function (s) { return '<option value="' + s + '">' + U.esc(U.subjectName(s)) + '</option>'; }).join(''); }
+    function subjOpts() { var g = +U.$('#t-grade').value; U.$('#t-subj').innerHTML = C.subjectsFor(g, OA.I18N.get()).map(function (s) { return '<option value="' + s + '">' + U.esc(U.subjectName(s)) + '</option>'; }).join(''); }
     U.$('#t-grade').onchange = subjOpts; subjOpts();
     U.$('#t-try').onclick = function () { U.toast('🚀', 'good'); OA.Shell.go('home'); };
     U.$('#t-new').onsubmit = function (e) { e.preventDefault(); OA.api.createClass(U.$('#t-name').value.trim()).then(function (r) { U.toast(t('classCreated', { c: r.code }), 'good', 6000); current = r.code; loadClasses(); }).catch(function (er) { U.toast(U.err(er), 'bad'); }); };

@@ -214,7 +214,7 @@ LM.lm_fraction = (r, lang) => {
   if (new Set(forms.map(f => f[1])).size < 4) return null;
   const best = forms.reduce((a, b) => (b[1] > a[1] ? b : a));
   const m = mcq(r, best[0], forms.filter(f => f !== best).map(f => [f[0], L(f[0] + ' = ' + f[1] + ' وهو أصغر من ' + best[1] + '.', f[0] + ' = ' + f[1] + ', which is less than ' + best[1] + '.')]), x => x, opt(lang));
-  return { multi: true, d: 2, q: L('أي قيمة هي الأكبر؟', 'Which value is the largest?'), m, e: L('حوّل الكل لأعداد عشرية: ', 'Convert all to decimals: ') + forms.map(f => f[0] + ' = ' + f[1]).join(' ، ') + '.' };
+  return { multi: true, d: 2, q: L('أي قيمة هي الأكبر؟', 'Which value is the largest?'), m, e: L('حوّل الكل لأعداد عشرية: ', 'Convert all to decimals: ') + forms.map(f => f[0] + ' = ' + f[1]).join(lang === 'ar' ? ' ، ' : ', ') + '.' };
 };
 LM.lm_ratio = (r, lang) => {
   const L = X(lang), cur = L('جنيه', 'EGP'), n1 = r.pick([2, 3, 4, 5, 6]), n2 = r.pick([8, 10, 12, 15, 20]), u1 = r.int(4, 12), u2 = r.int(4, 12);

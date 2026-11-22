@@ -28,7 +28,7 @@
   OA.Pages.progress = function (el) {
     el.innerHTML = '<div class="page-head"><h1>' + t('progressTitle') + '</h1><p>' + t('progressSub') + '</p></div><div id="pbody"><div class="empty">…</div></div>';
     OA.api.progress().then(function (p) {
-      var u = p.user, st = p.stats, subs = C.subjectsFor(u.gradeLevel), l = OA.I18N.get();
+      var u = p.user, st = p.stats, subs = C.subjectsFor(u.gradeLevel, OA.I18N.get()), l = OA.I18N.get();
       var kpis = [[st.missions, t('missions'), 'rocket'], [st.answered, t('answers'), 'check'], [U.pct(st.answered ? st.correct / st.answered : null), t('accuracy'), 'target'], [U.pct(p.focusAvg), t('focusScore'), 'sparkle']];
       var level = subs.map(function (s) {
         var e = p.elo[s], v = e == null ? null : 1 / (1 + Math.exp(-e));
@@ -72,6 +72,7 @@
       '</div></section>' +
       '<section class="card"><div class="card-h"><h3>' + U.icon('settings') + t('prefs') + '</h3></div><div class="card-b">' +
         '<div class="row between" style="padding:6px 0 12px;border-bottom:1px solid var(--line)"><span>' + t('language') + '</span><div class="lang-pill"><button data-l="ar" class="' + (l === 'ar' ? 'on' : '') + '">عربي</button><button data-l="en" class="' + (l === 'en' ? 'on' : '') + '">English</button></div></div>' +
+        '<div class="row between" style="padding:12px 0;border-bottom:1px solid var(--line)"><span>' + t('theme') + '</span><div class="lang-pill"><button data-th="light" class="' + (U.theme.get() === 'light' ? 'on' : '') + '">☀️ ' + t('lightMode') + '</button><button data-th="dark" class="' + (U.theme.get() === 'dark' ? 'on' : '') + '">🌙 ' + t('darkMode') + '</button></div></div>' +
         sw('s-sound', st.sound, t('sound')) + sw('s-timer', st.timer, t('qTimer')) + sw('s-motion', st.reduceMotion, t('reduceMotion')) +
       '</div></section></div>' +
       '<aside><section class="card"><div class="card-h"><h3>' + U.icon('sparkle') + t('about') + '</h3></div><div class="card-b stack small">' +
@@ -80,6 +81,7 @@
         '<div><span class="mut">' + t('aiTutor') + '</span><div>' + (api.info.ai ? '✨ ' + U.esc(api.info.ai) : t('aiLocal')) + '</div></div>' +
         '<div><span class="mut">' + t('mlModel') + '</span><div>' + (OA.Model ? t('modelSim', { a: OA.Model.correct.auc.toFixed(3), b: OA.Model.disengage.auc.toFixed(3) }) : 'Elo') + '</div></div>' +
       '</div></section></aside></div>';
+    U.$$('[data-th]', el).forEach(function (b) { b.onclick = function () { U.theme.set(b.dataset.th); OA.Shell.go('settings'); }; });
     U.$$('[data-l]', el).forEach(function (b) { b.onclick = function () { OA.I18N.set(b.dataset.l); OA.Shell.go('settings'); }; });
     U.$$('#avs button').forEach(function (b) { b.onclick = function () { api.updateMe({ avatar: b.dataset.a }).then(function (nu) { OA.app.user = nu; OA.Shell.go('settings'); }); }; });
     var g = U.$('#s-grade'); if (g) g.onchange = function () { api.updateMe({ gradeLevel: +g.value }).then(function (nu) { OA.app.user = nu; OA.app.prog = null; OA.Home.setSubject(null); U.toast(t('trackChanged'), 'good'); OA.Shell.go('settings'); }).catch(function (e) { U.toast(U.err(e), 'bad'); }); };
